@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Funil Vetor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: barra superior com abas; funil em colunas lado a lado, cada lead é um cartão que se arrasta entre etapas. */
+:root{
+  --bg:#F2F3EF; --surface:#FFFFFF; --surface2:#E9EBE5; --ink:#17212B; --mute:#5D6A75; --line:#D8DCD3;
+  --accent:#2457D6; --accent-ink:#FFFFFF; --accent-soft:#E3EAFB;
+  --ok:#1B7F4B; --ok-soft:#DDF0E5; --warn:#A85A07; --warn-soft:#F8EAD3; --bad:#B3261E; --bad-soft:#F7DEDC;
+  --shadow:0 1px 2px rgba(23,33,43,.08),0 4px 14px rgba(23,33,43,.06); color-scheme:light;
+  --f-head:'Space Grotesk','Inter',system-ui,sans-serif; --f-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
+h1,h2,h3{font-family:var(--f-head);margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-bottom:14px}
+.brand{font-family:var(--f-head);font-weight:700;font-size:20px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.brand svg{width:22px;height:22px;color:var(--accent)}
+.tabs{display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:9px}
+.tab{border:0;background:transparent;padding:6px 14px;border-radius:7px;color:var(--mute);font-weight:500}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.spacer{flex:1}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.in{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0;width:100%}
+.in:focus{border-color:var(--accent)}
+.search{width:220px}
+.chk{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:13px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.bad{color:var(--bad)}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Funil */
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:1180px){.board{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:12px}.col{flex:0 0 270px}}
+.cn{overflow-wrap:anywhere}
+.basebar{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:var(--mute)}
+.cls{width:auto;padding:2px 4px;border-radius:6px}
+tbody tr[data-row]{cursor:pointer}
+tbody tr[data-row]:hover{background:var(--surface2)}
+.bulk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+.frow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.frow .in{width:auto}
+.col{min-width:0;scroll-snap-align:start;background:var(--cbg,var(--surface2));border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 150px);min-height:160px}
+.col.over{outline:2px dashed var(--accent);outline-offset:-2px}
+.colh{display:flex;align-items:center;gap:8px;padding:2px 4px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mute)}
+.colh h2{font-size:14px;font-weight:600;color:var(--ctx,var(--ink))}
+.colh .n{margin-left:auto;color:var(--cdm,var(--mute));font-variant-numeric:tabular-nums;font-size:13px}
+.coldica{color:var(--cdm,var(--mute));font-size:12px;padding:0 4px 2px}
+.cards{display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:40px;padding:1px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 11px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;gap:5px;text-align:left;width:100%}
+.card:hover{border-color:var(--accent)}
+.card.drag{opacity:.45}
+.cn{font-weight:600;line-height:1.25}
+.cs{color:var(--mute);font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:11.5px;padding:2px 7px;border-radius:99px;background:var(--surface2);color:var(--mute);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.acc{background:var(--accent-soft);color:var(--accent)}
+.last{font-size:12px;color:var(--mute)}
+.vazio{border:1px dashed var(--cac,var(--line));border-radius:10px;padding:14px;color:var(--cdm,var(--mute));font-size:13px;text-align:center}
+
+/* Estado vazio geral */
+.empty{max-width:560px;margin:48px auto;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty h2{font-size:22px}
+.empty p{margin:0;color:var(--mute)}
+
+/* Modal */
+.veil{position:fixed;inset:0;background:rgba(10,15,20,.55);z-index:50;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:24px 12px}
+.modal{background:var(--bg);border-radius:14px;width:min(760px,100%);padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.mh{display:flex;gap:10px;align-items:flex-start}
+.mh h2{font-size:20px;flex:1}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.sec h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.fld{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fld label{font-size:12px;color:var(--mute)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stages{display:flex;flex-wrap:wrap;gap:6px}
+.stages .btn[aria-pressed="true"]{background:var(--cac,var(--accent));color:#fff;border-color:var(--cac,var(--accent))}
+.hist{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.h{font-size:13px;border-left:2px solid var(--line);padding-left:9px}
+.h small{color:var(--mute)}
+.link{color:var(--accent);text-decoration:none;word-break:break-all}
+.link:hover{text-decoration:underline}
+.val{font-family:var(--f-head);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+.conf{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Métricas */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font:600 24px var(--f-head);font-variant-numeric:tabular-nums}
+.stat span{color:var(--mute);font-size:12.5px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.panel h3{font-size:15px;margin-bottom:10px}
+.cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.funnel{display:flex;flex-direction:column;gap:8px}
+.fr{display:grid;grid-template-columns:130px 1fr 80px;gap:10px;align-items:center;font-size:13px}
+.bar{height:16px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.fr em{font-style:normal;color:var(--mute);text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.note{color:var(--mute);font-size:12.5px;margin:8px 0 0}
+
+/* Importar */
+.imp{max-width:760px;display:flex;flex-direction:column;gap:12px}
+.imp textarea{min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;resize:vertical}
+.prev{font-size:13px;color:var(--mute)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:9px;z-index:80;font-size:13px;max-width:92vw}
+.ro{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px}
+@media (max-width:560px){
+  .search{width:100%}
+  .fab span{display:none}
+  .fab{padding:12px}
+  .col{flex-basis:84vw;max-height:none}
+  .veil{padding:0}
+  .modal{border-radius:0;min-height:100%}
+  .fr{grid-template-columns:96px 1fr 64px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+[hidden]{display:none!important}
+/* Layout com menu lateral */
+.app{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px;align-items:start}
+.side{position:sticky;top:14px;display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 10px}
+.side .brand{padding:2px 8px 10px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.tab,.nv{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:0;background:transparent;padding:8px 10px;border-radius:8px;color:var(--mute);font-weight:500;text-align:left}
+.tab:hover,.nv:hover{background:var(--surface2);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.navsep{height:1px;background:var(--line);margin:6px 4px}
+.bdg{font-style:normal;font-size:11px;min-width:18px;text-align:center;padding:1px 6px;border-radius:99px;background:var(--surface2);color:var(--mute);font-variant-numeric:tabular-nums}
+.bdg.warn{background:var(--warn-soft);color:var(--warn)}
+.content{min-width:0}
+.pbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.pbar h1{font-size:22px}
+@media (max-width:860px){
+  .app{display:block}
+  .side{position:static;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;align-items:center;margin-bottom:12px;gap:2px}
+  .side .brand{padding:0 8px;white-space:nowrap}
+  .nav{flex-direction:row}
+  .tab,.nv{width:auto;white-space:nowrap}
+  .navsep{width:1px;height:22px;margin:0 4px;flex:none}
+}
+/* Cartão com botão Notificar */
+.cw{position:relative}
+.cw.hasn .cn{padding-right:78px}
+.notif{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok);text-decoration:none}
+.notif:hover{background:var(--ok);color:#fff}
+.notif svg{width:12px;height:12px}
+/* Dashboard */
+.pchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px}
+.pchips .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.stat small{display:block;color:var(--mute);font-size:11.5px;margin-top:2px}
+.sect{font-size:16px;margin:22px 0 10px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:110px;border-bottom:1px solid var(--line)}
+.bars .b{flex:1;min-width:2px;height:100%;display:flex;align-items:flex-end}
+.bars .b i{display:block;width:100%;background:var(--accent);border-radius:3px 3px 0 0}
+.bax{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-top:4px}
+.stack{display:flex;height:26px;border-radius:7px;overflow:hidden;border:1px solid var(--line);margin-bottom:6px}
+.stack span{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;min-width:0;overflow:hidden;white-space:nowrap}
+/* Manual flutuante */
+.fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;gap:7px;border:0;border-radius:99px;padding:11px 16px;background:var(--ink);color:var(--bg);font-weight:600;box-shadow:0 6px 20px rgba(23,33,43,.28)}
+.fab svg{width:17px;height:17px}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(430px,100vw);z-index:70;background:var(--bg);border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(23,33,43,.18);display:flex;flex-direction:column;gap:10px;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px)) 14px}
+.drh{display:flex;align-items:center;gap:8px}
+.drh h2{font-size:18px;flex:1}
+.mcats{display:flex;flex-wrap:wrap;gap:6px}
+.mcats .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mlist{overflow-y:auto;display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;padding-bottom:4px}
+.mi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0}
+.mi summary{cursor:pointer;padding:9px 11px;font-weight:600;display:flex;gap:8px;align-items:center;justify-content:space-between;list-style:none}
+.mi summary::-webkit-details-marker{display:none}
+.mi[open] summary{border-bottom:1px solid var(--line)}
+.mb{padding:9px 11px;display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.mb p{margin:0}
+.mb ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.mq{background:var(--accent-soft);border-radius:8px;padding:8px 10px;white-space:pre-line}
+body{margin:0}
+img{max-width:100%}
+.loginwrap{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
+.loginbox{width:min(380px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.who{font-size:12px;color:var(--mute);padding:6px 10px;overflow-wrap:anywhere}
+@media (max-width:860px){.who{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side" aria-label="Menu">
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5l8 15 8-15"/><path d="M8.5 5L12 11.5 15.5 5" opacity=".55"/></svg>Funil Vetor</div>
+  <nav class="nav" role="tablist" aria-label="Seções">
+    <button class="tab" role="tab" id="tab-funil" data-v="funil"><span>Funil</span><i class="bdg warn" id="bdgFunil" hidden title="Esboços pedidos ao Filipe"></i></button>
+    <button class="tab" role="tab" id="tab-base" data-v="base"><span>Base</span><i class="bdg" id="bdgBase" hidden title="Leads aguardando liberação"></i></button>
+    <button class="tab" role="tab" id="tab-dash" data-v="dash"><span>Dashboard</span></button>
+    <button class="tab" role="tab" id="tab-importar" data-v="importar"><span>Importar lista</span></button>
+  </nav>
+  <div class="navsep"></div>
+  <button class="nv" id="manualBtn" data-manual="1"><span>Manual da SDR</span></button>
+  <button class="nv" id="cfgBtn"><span>Configurações</span></button>
+  <div class="navsep"></div>
+  <div class="who" id="who"></div>
+  <button class="nv" id="sair"><span>Sair</span></button>
+</aside>
+<div class="content">
+  <div class="pbar">
+    <h1 id="pgTitle">Funil</h1>
+    <div class="spacer"></div>
+    <div class="tools" id="tools">
+      <input class="in search" id="busca" type="search" placeholder="Buscar clínica, cidade ou telefone" aria-label="Buscar lead">
+      <select class="in" id="filtro" aria-label="Filtrar cartões" style="width:auto"></select>
+    </div>
+    <button class="btn pri" id="novoLead">+ Novo lead</button>
+  </div>
+  <div id="ro" class="ro" hidden>Você está só visualizando. Para mover cartões e registrar contatos, peça acesso de Contribuidor ao Filipe.</div>
+  <main id="main"></main>
+</div>
+</div>
+<div class="loginwrap" id="login" hidden><form class="loginbox" id="loginForm"><div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5l8 15 8-15"/><path d="M8.5 5L12 11.5 15.5 5" opacity=".55"/></svg>Funil Vetor</div><p class="prev" style="margin:0">Entre com o e-mail e a senha criados para você.</p><div class="fld"><label for="lgEmail">E-mail</label><input class="in" id="lgEmail" type="email" autocomplete="username" required></div><div class="fld"><label for="lgSenha">Senha</label><input class="in" id="lgSenha" type="password" autocomplete="current-password" required></div><div class="conf" id="lgErr" hidden></div><button class="btn pri" id="lgGo" type="submit">Entrar</button></form></div>
+<div id="modalRoot"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-label="Manual da SDR" hidden>
+  <div class="drh"><h2>Manual da SDR</h2><button class="btn sm" id="drClose">Fechar</button></div>
+  <input class="in" id="mnBusca" type="search" placeholder="Buscar no manual (preço, domínio, pix, dobra…)" aria-label="Buscar no manual">
+  <div class="mcats" id="mnCats"></div>
+  <div class="mlist" id="mnList"></div>
+</aside>
+<button class="fab" id="manualFab" aria-expanded="false" data-manual="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/></svg><span>Manual da SDR</span></button>
+<div id="toast" class="toast" hidden></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+'use strict';
+var PRECOS={landing:800,padrao:1200,ampliado:1700};
+var NOMES={landing:'Landing Page',padrao:'Site Padrão',ampliado:'Site Ampliado'};
+var ETAPAS=[
+  {id:'novo',nome:'Novo lead',dica:'Ainda não abordado ou em tentativa',bg:'#ECEEEA',ac:'#7B8590',tx:'#1F2933',dm:'#66717C'},
+  {id:'reuniao',nome:'Reunião marcada',dica:'Esboço pedido ao Filipe ao entrar aqui',bg:'#D9F0DC',ac:'#2E8B4A',tx:'#12351D',dm:'#4A6F55'},
+  {id:'fechado',nome:'Fechado',dica:'Aceitou, entrada paga ou combinada',bg:'#D6E6FA',ac:'#3B73C4',tx:'#10294D',dm:'#4C6A93'},
+  {id:'entregue',nome:'Entregue',dica:'Site publicado e entregue',bg:'#1E5C3C',ac:'#2F9E63',tx:'#FFFFFF',dm:'#BFE3CE'},
+  {id:'perdido',nome:'Perdido',dica:'Recusa definitiva',bg:'#F7DCDC',ac:'#B33A3A',tx:'#4D1414',dm:'#8A5555'}
+];
+var BASE_ETAPA={id:'base',nome:'Na base',dica:'Aguardando liberação',bg:'#ECEEEA',ac:'#7B8590',tx:'#1F2933',dm:'#66717C'};
+var ETAPAS_ALL=[BASE_ETAPA].concat(ETAPAS);
+var CLASSES={A:['#D3F0EC','#0F6A60'],B:['#FBF1C7','#7A5A00'],C:['#E4E7E3','#4A5560']};
+var prop={a:60,b:30,c:10,qtd:20,ordem:'aleatoria'};
+var baseF={q:'',st:'todos',cl:'todas',ord:'classe',lote:'todos',max:150,sel:{}};
+var CANAIS=['Ligação','WhatsApp','Instagram','E-mail','Reunião'];
+var RESULT=[
+  {id:'nao_atendeu',nome:'Não atendeu',sug:null},
+  {id:'atendeu',nome:'Atendeu, sem definição',sug:null},
+  {id:'marcou',nome:'Marcou reunião',sug:'reuniao'},
+  {id:'retorno',nome:'Pediu retorno',sug:null},
+  {id:'sem_interesse',nome:'Sem interesse agora',sug:null},
+  {id:'pensando',nome:'Reunião feita, não fechou',sug:null},
+  {id:'fechou',nome:'Fechou',sug:'fechado'},
+  {id:'perdeu',nome:'Recusou de vez',sug:'perdido'}
+];
+var CORES={violet:['#E7DFF6','#4B2F96','Violeta'],amber:['#FBF1C7','#7A5A00','Âmbar'],blue:['#D6E6FA','#1F4F96','Azul'],teal:['#D3F0EC','#0F6A60','Verde-água'],rose:['#F7DCDC','#8E2A2A','Rosa'],gray:['#E4E7E3','#4A5560','Cinza']};
+var DEFAULT_TIPOS=[
+  {id:'fu1',nome:'Recusou na ligação',cor:'violet',canal:'Instagram',dias:3,gatilho:'sem_interesse'},
+  {id:'fu2',nome:'Não atendeu',cor:'amber',canal:'WhatsApp',dias:1,gatilho:'nao_atendeu'},
+  {id:'fu3',nome:'Reunião feita, não fechou',cor:'blue',canal:'WhatsApp',dias:2,gatilho:'pensando'},
+  {id:'fu4',nome:'Pediu retorno',cor:'teal',canal:'Ligação',dias:1,gatilho:'retorno'}
+];
+var tiposCfg=null;
+function tipos(){return tiposCfg||DEFAULT_TIPOS}
+function tipoDe(id){return tipos().find(function(t){return t.id===id})||{id:'',nome:'Follow-up',cor:'gray',canal:'',dias:2,gatilho:''}}
+var $=function(s,r){return (r||document).querySelector(s)};
+var esc=function(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var db=null, userNs=null, myId=null, canWrite=true, unsub=null, sb=null, isAdmin=true;
+var leads=[], byId={}, view='funil', openId=null, loaded=false, dbError='';
+var queue={};
+
+/* ---------- utilidades ---------- */
+function norm(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim()}
+function digits(s){return String(s||'').replace(/\D/g,'')}
+function hoje(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function addDias(n){var d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fmtData(iso){if(!iso)return '';var p=iso.slice(0,10).split('-');return p[2]+'/'+p[1]}
+function fmtDataHora(v){if(!v)return '';var t=v.split('T');return fmtData(t[0])+(t[1]?' às '+t[1]:'')}
+function rel(ms){var m=Math.round((Date.now()-ms)/60000);if(m<1)return 'agora';if(m<60)return 'há '+m+' min';var h=Math.round(m/60);if(h<24)return 'há '+h+' h';var d=Math.round(h/24);return 'há '+d+' d'}
+function brl(n){return 'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2})}
+function valorLead(l){if(!l.pacote||!PRECOS[l.pacote])return 0;return PRECOS[l.pacote]*(l.avista?0.9:1)}
+function waLink(tel){var d=digits(tel);if(!d)return '';if(d.length<=11)d='55'+d;return 'https://wa.me/'+d}
+function igLink(v){v=String(v||'').trim();if(!v)return '';if(/^https?:\/\//i.test(v))return v;return 'https://instagram.com/'+v.replace(/^@/,'').replace(/\/$/,'')}
+function safeUrl(v){v=String(v||'').trim();if(!v)return '';if(/^https?:\/\//i.test(v))return v;if(/^[\w.-]+\.[a-z]{2,}/i.test(v))return 'https://'+v;return ''}
+function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},2600)}
+function copy(text,ok){
+  function fb(){var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(ok||'Copiado')}catch(e){toast('Selecione e copie manualmente')}ta.remove()}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast(ok||'Copiado')},fb)}else fb();
+}
+function etapaDe(id){return ETAPAS_ALL.find(function(e){return e.id===id})||ETAPAS[0]}
+function vencido(l){return !!(l.proxAcao&&l.proxAcao.data&&l.proxAcao.data<hoje()&&['entregue','perdido'].indexOf(l.stage)<0)}
+
+/* ---------- gravação ---------- */
+function save(id,patch){
+  if(!db||!canWrite)return Promise.reject(new Error('sem permissão'));
+  patch.atualizadoEm=Date.now();
+  var l0=byId[id];
+  if(patch.stage&&(!l0||l0.stage!==patch.stage)){var eE=Object.assign({},l0&&l0.etapaEm);eE[patch.stage]=patch.atualizadoEm;patch.etapaEm=eE}
+  var ref=db.collection('leads').doc(id);
+  var prev=queue[id]||Promise.resolve();
+  var p=prev.catch(function(){}).then(function(){return ref.update(patch)});
+  queue[id]=p;
+  return p.catch(function(e){toast('Não foi possível salvar'+(e&&e.code==='invalid_argument'?': sem permissão de edição':''));throw e});
+}
+function setStage(id,stage,extra){
+  var l=byId[id];if(!l||l.stage===stage&&!extra)return Promise.resolve();
+  var patch=Object.assign({stage:stage},extra||{});
+  if(stage==='reuniao'&&(!l.esboco||l.esboco==='nao'))patch.esboco='pedido';
+  if(stage==='perdido'||stage==='entregue'||stage==='reuniao')patch.proxAcao=null;
+  return save(id,patch);
+}
+
+
+/* ---------- Notificar Filipe ---------- */
+var FUNIL_URL=location.origin+location.pathname, notifTel='', cfgTel='';
+var ICON_WA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.7-5.2A8.5 8.5 0 1 1 21 12z"/></svg>';
+function msgNotif(l){
+  var pr=prioridade(l),L=[(pr?'['+pr.nome.toUpperCase()+'] ':'')+'REUNIÃO MARCADA: preparar o esboço do site','','Clínica: '+(l.nome||'')];
+  [['Especialidade',l.especialidade],['Cidade',l.cidade],['Responsável / quem vai à reunião',l.responsavel],['Telefone / WhatsApp',l.telefone],['Instagram',l.instagram],['Google',l.google],['Site atual',l.site],['Endereço',l.endereco],['Horário de funcionamento',l.horario],['Avaliações',l.avaliacoes?l.avaliacoes+(l.nota?' (nota '+String(l.nota).replace('.',',')+')':''):''],['E-mail',l.email],['Classe',isAdmin?l.classe:''],
+   ['Reunião',l.reuniao?fmtDataHora(l.reuniao):'data ainda não informada'],['Pacote de interesse',l.pacote?NOMES[l.pacote]:''],['Instruções para o esboço',l.esbocoObs],['Observações',l.obs]].forEach(function(p){if(p[1])L.push(p[0]+': '+p[1])});
+  L.push('','Cartão no funil: '+FUNIL_URL);
+  return L.join('\n');
+}
+function notifHref(l){var d=digits(notifTel);if(d&&d.length<=11)d='55'+d;return 'https://wa.me/'+d+'?text='+encodeURIComponent(msgNotif(l))}
+function prioridade(l){
+  if(l.stage!=='reuniao'||l.esboco==='pronto'||!l.reuniao)return null;
+  var a=l.reuniao.slice(0,10).split('-'),alvo=new Date(+a[0],+a[1]-1,+a[2]).getTime(),h=new Date();h=new Date(h.getFullYear(),h.getMonth(),h.getDate()).getTime();
+  var dias=Math.round((alvo-h)/864e5);
+  if(dias<=1)return {id:'urg',nome:dias<0?'Urgente (reunião passou)':dias===0?'Urgente: hoje':'Urgente: amanhã'};
+  return {id:'mod',nome:'Prazo moderado: em '+dias+' dias'};
+}
+function badges(){
+  var esb=0,base=0;leads.forEach(function(l){if(l.esboco==='pedido'&&l.stage!=='base'&&l.stage!=='perdido')esb++;if(l.stage==='base')base++});
+  var a=$('#bdgFunil'),b=$('#bdgBase');if(a){a.hidden=!esb;a.textContent=esb}if(b){b.hidden=!base||!isAdmin;b.textContent=base}
+}
+
+/* ---------- filtros ---------- */
+function filtrados(){
+  var q=norm($('#busca').value), fv=$('#filtro').value;
+  return leads.filter(function(l){
+    if(l.stage==='base')return false;
+    var a=l.proxAcao;
+    if(fv==='fu'&&!(a&&(a.data||a.tipo)))return false;
+    if(fv==='venc'&&!vencido(l))return false;
+    if(fv==='sem'&&(l.contatos||[]).length)return false;
+    if(fv==='esb'&&l.esboco!=='pedido')return false;
+    if(fv==='urg'&&!(prioridade(l)&&prioridade(l).id==='urg'))return false;
+    if(fv.indexOf('t:')===0&&!(a&&a.tipo===fv.slice(2)))return false;
+    if(!q)return true;
+    return norm([l.nome,l.cidade,l.especialidade,l.telefone,l.instagram].join(' ')).indexOf(q)>=0||digits(l.telefone).indexOf(digits(q))>=0&&digits(q).length>3;
+  });
+}
+function ordena(stage,arr){
+  var f={
+    novo:function(a,b){return (vencido(b)-vencido(a))||((a.criadoEm||0)-(b.criadoEm||0))},
+    reuniao:function(a,b){return String(a.reuniao||'9').localeCompare(String(b.reuniao||'9'))},
+    followup:function(a,b){return String((a.proxAcao&&a.proxAcao.data)||'9').localeCompare(String((b.proxAcao&&b.proxAcao.data)||'9'))}
+  }[stage]||function(a,b){return (b.atualizadoEm||0)-(a.atualizadoEm||0)};
+  return arr.sort(f);
+}
+
+/* ---------- Funil ---------- */
+function classeChip(l){if(!isAdmin)return '';var c=CLASSES[l.classe];return c?'<span class="chip" style="background:'+c[0]+';color:'+c[1]+';font-weight:600">Classe '+esc(l.classe)+'</span>':''}
+function fuChip(l){
+  var a=l.proxAcao;if(!a||!(a.tipo||a.data))return '';var t=tipoDe(a.tipo),c=CORES[t.cor]||CORES.gray;
+  return '<span class="chip" style="background:'+c[0]+';color:'+c[1]+'">'+esc(t.nome)+(a.data?' · '+esc(a.canal||'')+' '+esc(fmtData(a.data)):'')+'</span>'+(vencido(l)?'<span class="chip bad">vencido</span>':'');
+}
+function renderFiltro(){
+  var el=$('#filtro'),cur=el.value||'todos';
+  el.innerHTML='<option value="todos">Todos os leads</option><option value="sem">Sem contato ainda</option><option value="fu">Com follow-up</option><option value="venc">Follow-up vencido</option><option value="esb">Esboço pedido (fila do Filipe)</option><option value="urg">Esboço urgente</option>'+tipos().map(function(t){return '<option value="t:'+esc(t.id)+'">Follow-up: '+esc(t.nome)+'</option>'}).join('');
+  el.value=[].some.call(el.options,function(o){return o.value===cur})?cur:'todos';
+}
+function cardHtml(l){
+  var ult=(l.contatos||[]).slice(-1)[0], chips=classeChip(l);
+  if(l.avaliacoes||l.nota)chips+='<span class="chip">'+(l.nota?esc(String(l.nota).replace('.',','))+' ★':'')+(l.avaliacoes?' ('+esc(l.avaliacoes)+')':'')+'</span>';
+  if(l.reuniao)chips+='<span class="chip acc">Reunião '+esc(fmtDataHora(l.reuniao))+'</span>';
+  chips+=fuChip(l);
+  if(l.esboco==='pedido')chips+='<span class="chip warn">Esboço pedido</span>';
+  var pr=prioridade(l);if(pr)chips+='<span class="chip '+(pr.id==='urg'?'bad':'acc')+'" style="font-weight:600">'+esc(pr.nome)+'</span>';
+  if(l.esboco==='pronto')chips+='<span class="chip ok">Esboço pronto</span>';
+  if(l.pacote)chips+='<span class="chip ok">'+esc(NOMES[l.pacote]||l.pacote)+' · '+esc(brl(valorLead(l)))+'</span>';
+  var tent=(l.contatos||[]).length;
+  var last=ult?esc(ult.canal)+' · '+esc((RESULT.find(function(r){return r.id===ult.resultado})||{}).nome||'')+' · '+rel(ult.t):'Sem contato ainda';
+  var nb=l.stage==='reuniao';
+  if(nb&&l.notificadoEm)chips+='<span class="chip ok">Filipe notificado</span>';
+  return '<div class="cw'+(nb?' hasn':'')+'"><div class="card" tabindex="0" role="button" draggable="'+(canWrite?'true':'false')+'" data-id="'+esc(l.id)+'" aria-label="Abrir '+esc(l.nome)+'">'+
+    '<div class="cn">'+esc(l.nome||'Sem nome')+'</div>'+
+    '<div class="cs">'+esc([l.especialidade,l.cidade].filter(Boolean).join(' · '))+'</div>'+
+    (chips?'<div class="chips">'+chips+'</div>':'')+
+    '<div class="last">'+last+(tent>1?' · '+tent+' contatos':'')+'</div></div>'+
+    (nb?'<a class="notif" data-notif="'+esc(l.id)+'" href="'+esc(notifHref(l))+'" target="_blank" rel="noopener" title="Copia os dados do cliente e abre o WhatsApp do Filipe">'+ICON_WA+'Notificar</a>':'')+'</div>';
+}
+function renderBoard(){
+  if(!loaded){$('#main').innerHTML='<div class="vazio">Carregando leads…</div>';return}
+  if(!leads.length){
+    $('#main').innerHTML='<div class="empty"><h2>Nenhum lead ainda</h2><p>Os leads da semana aparecem aqui como cartões, um por clínica, com Google, Instagram, telefone e horário. Cadastre um lead, importe uma planilha ou peça ao Filipe para carregar a lista.</p><div class="row"><button class="btn pri" data-new="1">Cadastrar lead</button><button class="btn" data-go="importar">Importar lista</button></div></div>';
+    return;
+  }
+  var nb={A:0,B:0,C:0,S:0},tb=0;leads.forEach(function(l){if(l.stage==='base'){tb++;nb[CLASSES[l.classe]?l.classe:'S']++}});
+  var fl=filtrados(), html=(tb&&isAdmin?'<div class="basebar">Na base: <b>'+tb+'</b> leads aguardando (A '+nb.A+' · B '+nb.B+' · C '+nb.C+(nb.S?' · sem classe '+nb.S:'')+') · <a class="link" href="#base">Liberar para o funil</a></div>':'')+'<div class="board" id="board">';
+  ETAPAS.forEach(function(e){
+    var arr=ordena(e.id,fl.filter(function(l){return (l.stage||'novo')===e.id}));
+    html+='<section class="col" data-stage="'+e.id+'" style="--cbg:'+e.bg+';--cac:'+e.ac+';--ctx:'+e.tx+';--cdm:'+e.dm+'" aria-label="'+esc(e.nome)+'"><div class="colh"><span class="dot" style="background:'+e.ac+'"></span><h2>'+esc(e.nome)+'</h2><span class="n">'+arr.length+'</span></div><div class="coldica">'+esc(e.dica)+'</div><div class="cards">'+
+      (arr.length?arr.map(cardHtml).join(''):'<div class="vazio">Arraste um cartão para cá</div>')+'</div></section>';
+  });
+  $('#main').innerHTML=html+'</div>';
+}
+
+/* ---------- Métricas ---------- */
+function metricas(){
+  var m={total:leads.length,trab:0,atend:0,reun:0,real:0,fech:0,receita:0,lig:0,canais:{},fu:{},caminhos:{},motivos:{},tentAtend:[],venc:0};
+  CANAIS.forEach(function(c){m.canais[c]={c:0,at:0,re:0,fe:0}});
+  leads.forEach(function(l){
+    var cs=l.contatos||[], st=l.stage||'novo';
+    if(st==='base')return;
+    if(cs.length)m.trab++;
+    var iat=cs.findIndex(function(c){return c.resultado!=='nao_atendeu'});
+    if(iat>=0){m.atend++;m.tentAtend.push(iat+1)}
+    if(['reuniao','fechado','entregue'].indexOf(st)>=0||cs.some(function(c){return c.resultado==='marcou'}))m.reun++;
+    if(['fechado','entregue'].indexOf(st)>=0||cs.some(function(c){return c.resultado==='pensando'||c.resultado==='fechou'}))m.real++;
+    if(st==='fechado'||st==='entregue'){m.fech++;m.receita+=valorLead(l);
+      var path=[];cs.forEach(function(c){if(path[path.length-1]!==c.canal)path.push(c.canal)});
+      if(path.length){var k=path.join(' → ');m.caminhos[k]=(m.caminhos[k]||0)+1}}
+    if(vencido(l))m.venc++;
+    cs.forEach(function(c){
+      var p=m.canais[c.canal]||(m.canais[c.canal]={c:0,at:0,re:0,fe:0});
+      p.c++;if(c.resultado!=='nao_atendeu')p.at++;if(c.resultado==='marcou')p.re++;if(c.resultado==='fechou')p.fe++;
+      if(c.canal==='Ligação')m.lig++;
+      if(c.fu){var ft=m.fu[c.fu]||(m.fu[c.fu]={c:0,at:0,re:0,fe:0});ft.c++;if(c.resultado!=='nao_atendeu')ft.at++;if(c.resultado==='marcou')ft.re++;if(c.resultado==='fechou')ft.fe++}
+    });
+    if(l.motivo){var mo=norm(l.motivo);m.motivos[mo]=(m.motivos[mo]||{t:l.motivo.trim(),n:0});m.motivos[mo].n++}
+  });
+  return m;
+}
+function pct(a,b){return b?Math.round(a/b*100)+'%':'–'}
+function classPanel(){
+  var cs={A:{},B:{},C:{},S:{}};Object.keys(cs).forEach(function(k){cs[k]={tot:0,base:0,lib:0,cont:0,at:0,re:0,fe:0}});
+  leads.forEach(function(l){var k=CLASSES[l.classe]?l.classe:'S',o=cs[k],st=l.stage||'novo',c=l.contatos||[];o.tot++;
+    if(st==='base'){o.base++;return}
+    o.lib++;if(c.length)o.cont++;if(c.some(function(x){return x.resultado!=='nao_atendeu'}))o.at++;
+    if(['reuniao','fechado','entregue'].indexOf(st)>=0||c.some(function(x){return x.resultado==='marcou'}))o.re++;
+    if(st==='fechado'||st==='entregue')o.fe++;});
+  var rows=['A','B','C','S'].filter(function(k){return cs[k].tot}).map(function(k){var o=cs[k],cl=CLASSES[k]||CLASSES.C;
+    return '<tr><td><span class="chip" style="background:'+cl[0]+';color:'+cl[1]+';font-weight:600">'+(k==='S'?'Sem classe':'Classe '+k)+'</span></td><td class="num">'+o.base+'</td><td class="num">'+o.lib+'</td><td class="num">'+o.cont+'</td><td class="num">'+o.at+'</td><td class="num">'+o.re+'</td><td class="num">'+o.fe+'</td><td class="num">'+pct(o.fe,o.lib)+'</td><td class="num">'+(o.fe?Math.round(o.lib/o.fe):'–')+'</td></tr>'}).join('');
+  return '<div class="panel"><h3>A classificação se confirma?</h3><div class="tw"><table><thead><tr><th>Classe</th><th class="num">Na base</th><th class="num">Liberados</th><th class="num">Contatados</th><th class="num">Atenderam</th><th class="num">Reunião</th><th class="num">Fecharam</th><th class="num">Fecham / liberados</th><th class="num">Liberados por fechamento</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="note">Se a classe A fecha mais que a B, e a B mais que a C, a classificação funciona. Com menos de 30 leads liberados por classe, a diferença pode ser acaso.</p></div>';
+}
+function fuPanel(m){
+  var ts=tipos(),pend={},venc={};
+  leads.forEach(function(l){var a=l.proxAcao;if(a&&a.tipo){pend[a.tipo]=(pend[a.tipo]||0)+1;if(vencido(l))venc[a.tipo]=(venc[a.tipo]||0)+1}});
+  var rows=ts.map(function(t){var f=m.fu[t.id]||{c:0,at:0,re:0,fe:0},c=CORES[t.cor]||CORES.gray;
+    return '<tr><td><span class="chip" style="background:'+c[0]+';color:'+c[1]+'">'+esc(t.nome)+'</span></td><td class="num">'+(pend[t.id]||0)+'</td><td class="num">'+(venc[t.id]||0)+'</td><td class="num">'+f.c+'</td><td class="num">'+f.at+'</td><td class="num">'+f.re+'</td><td class="num">'+f.fe+'</td></tr>'}).join('');
+  return '<div class="panel"><h3>Follow-ups por tipo</h3><div class="tw"><table><thead><tr><th>Tipo</th><th class="num">Agendados</th><th class="num">Vencidos</th><th class="num">Executados</th><th class="num">Atenderam</th><th class="num">Marcaram reunião</th><th class="num">Fecharam</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="note">“Executados” conta os contatos feitos enquanto aquele follow-up estava agendado. Mostra qual tipo recupera mais leads.</p></div>';
+}
+function acumuladoHtml(){
+  var m=metricas();
+  var media=m.tentAtend.length?(m.tentAtend.reduce(function(a,b){return a+b},0)/m.tentAtend.length).toFixed(1).replace('.',','):'–';
+  var fun=[['No funil',m.total],['Com contato',m.trab],['Atenderam',m.atend],['Reunião marcada',m.reun],['Reunião feita',m.real],['Fechados',m.fech]];
+  var max=m.total||1, h='';
+  h+='<div class="stats"><div class="stat"><b>'+m.lig+'</b><span>ligações registradas</span></div><div class="stat"><b>'+pct(m.reun,m.atend)+'</b><span>de quem atendeu marcou reunião</span></div><div class="stat"><b>'+pct(m.fech,m.real)+'</b><span>das reuniões feitas fecharam</span></div><div class="stat"><b>'+esc(brl(m.receita))+'</b><span>fechado em contratos</span></div><div class="stat"><b>'+media+'</b><span>tentativas até alguém atender</span></div><div class="stat"><b>'+m.venc+'</b><span>follow-ups vencidos</span></div><div class="stat"><b>'+(m.fech?String(Math.round(leads.length/m.fech)):'–')+'</b><span>leads prospectados por fechamento</span></div></div>';
+  h+='<div class="cols2"><div class="panel"><h3>Funil</h3><div class="funnel">'+fun.map(function(f,i){
+    return '<div class="fr"><span>'+f[0]+'</span><div class="bar"><i style="width:'+Math.max(2,f[1]/max*100)+'%"></i></div><em>'+f[1]+(i?' · '+pct(f[1],fun[i-1][1]):'')+'</em></div>'}).join('')+'</div><p class="note">A porcentagem ao lado compara cada etapa com a anterior.</p></div>';
+  h+='<div class="panel"><h3>Resultado por canal</h3><div class="tw"><table><thead><tr><th>Canal</th><th class="num">Contatos</th><th class="num">Atenderam</th><th class="num">Marcaram reunião</th><th class="num">Fecharam</th></tr></thead><tbody>'+
+    Object.keys(m.canais).map(function(k){var c=m.canais[k];return '<tr><td>'+esc(k)+'</td><td class="num">'+c.c+'</td><td class="num">'+c.at+' <small>'+pct(c.at,c.c)+'</small></td><td class="num">'+c.re+' <small>'+pct(c.re,c.c)+'</small></td><td class="num">'+c.fe+'</td></tr>'}).join('')+
+    '</tbody></table></div><p class="note">Cada linha conta os contatos feitos por aquele canal. Com poucos contatos, a porcentagem engana.</p></div></div>';
+  var cam=Object.keys(m.caminhos).sort(function(a,b){return m.caminhos[b]-m.caminhos[a]});
+  var mot=Object.keys(m.motivos).sort(function(a,b){return m.motivos[b].n-m.motivos[a].n});
+  if(isAdmin)h+=classPanel();
+  h+=fuPanel(m);
+  h+='<div class="cols2"><div class="panel"><h3>Caminhos até o fechamento</h3>'+(cam.length?'<div class="tw"><table><tbody>'+cam.map(function(k){return '<tr><td>'+esc(k)+'</td><td class="num">'+m.caminhos[k]+'</td></tr>'}).join('')+'</tbody></table></div>':'<p class="note">Aparece quando houver o primeiro cliente fechado.</p>')+'</div>';
+  h+='<div class="panel"><h3>Motivos de dúvida e recusa</h3>'+(mot.length?'<div class="tw"><table><tbody>'+mot.slice(0,12).map(function(k){return '<tr><td>'+esc(m.motivos[k].t)+'</td><td class="num">'+m.motivos[k].n+'</td></tr>'}).join('')+'</tbody></table></div>':'<p class="note">Preencha o campo “Motivo” nos cartões que tiverem dúvida ou recusa.</p>')+'</div></div>';
+  return h;
+}
+
+
+/* ---------- Dashboard ---------- */
+var dashP='semana', dashG='especialidade';
+var PERIODOS=[['hoje','Hoje'],['ontem','Ontem'],['semana','Esta semana'],['mes','Este mês'],['d15','15 dias'],['d30','30 dias'],['d90','90 dias']];
+function dKey(ms){var d=new Date(ms);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function faixa(p){
+  var n=new Date(),y=n.getFullYear(),m=n.getMonth(),d=n.getDate(),D=function(o){return new Date(y,m,d+o).getTime()},ini,fim=D(1);
+  if(p==='hoje')ini=D(0);
+  else if(p==='ontem'){ini=D(-1);fim=D(0)}
+  else if(p==='semana')ini=D(-((n.getDay()+6)%7));
+  else if(p==='mes')ini=new Date(y,m,1).getTime();
+  else ini=D(-((({d7:7,d15:15,d30:30,d90:90})[p]||30)-1));
+  return [ini,fim];
+}
+function ultC(l,res){var r=0;(l.contatos||[]).forEach(function(c){if(c.resultado===res&&c.t>r)r=c.t});return r}
+function fechou(l){return l.stage==='fechado'||l.stage==='entregue'}
+function teveReuniao(l){return ['reuniao','fechado','entregue'].indexOf(l.stage)>=0||(l.contatos||[]).some(function(c){return c.resultado==='marcou'})}
+function quando(l,et){
+  var e=l.etapaEm||{},u=l.atualizadoEm||0;
+  if(et==='fechado')return e.fechado||e.entregue||ultC(l,'fechou')||u;
+  if(et==='reuniao')return e.reuniao||ultC(l,'marcou')||e.fechado||u;
+  return e.perdido||ultC(l,'perdeu')||u;
+}
+function zc(){return {cont:0,resp:0,reun:0,fech:0,rec:0}}
+function dashData(r){
+  var d={novos:0,lib:0,cont:0,resp:0,ligs:0,reun:0,fech:0,rec:0,perd:0,cls:{A:zc(),B:zc(),C:zc(),S:zc()},grp:{},dias:[],idx:{}};
+  for(var t=new Date(r[0]);t.getTime()<r[1];t=new Date(t.getFullYear(),t.getMonth(),t.getDate()+1)){d.idx[dKey(t.getTime())]=d.dias.length;d.dias.push({k:dKey(t.getTime()),c:0,rec:0})}
+  var inR=function(t){return t>=r[0]&&t<r[1]};
+  leads.forEach(function(l){
+    var cs=(l.contatos||[]).filter(function(c){return inR(c.t)});
+    var ck=CLASSES[l.classe]?l.classe:'S',C=d.cls[ck],gk=String(l[dashG]||'').trim()||'(não informado)',gn=norm(gk);
+    var g=d.grp[gn]||(d.grp[gn]={nome:gk,cont:0,resp:0,reun:0,fech:0,rec:0,perd:0});
+    if(inR(l.criadoEm||0))d.novos++;
+    var ent=l.stage==='base'?0:(l.liberadoEm||l.criadoEm||0);if(ent&&inR(ent))d.lib++;
+    if(cs.length){d.cont++;g.cont++;C.cont++;
+      if(cs.some(function(c){return c.resultado!=='nao_atendeu'})){d.resp++;g.resp++;C.resp++}
+      cs.forEach(function(c){if(c.canal==='Ligação')d.ligs++;var i=d.idx[dKey(c.t)];if(i!=null)d.dias[i].c++});
+    }
+    if(teveReuniao(l)&&inR(quando(l,'reuniao'))){d.reun++;g.reun++;C.reun++}
+    if(fechou(l)){var tf=quando(l,'fechado');if(inR(tf)){var v=valorLead(l);d.fech++;d.rec+=v;g.fech++;g.rec+=v;C.fech++;C.rec+=v;var i2=d.idx[dKey(tf)];if(i2!=null)d.dias[i2].rec+=v}}
+    if(l.stage==='perdido'&&inR(quando(l,'perdido'))){d.perd++;g.perd++}
+  });
+  return d;
+}
+function recFaixa(r){var s=0;leads.forEach(function(l){if(fechou(l)){var t=quando(l,'fechado');if(t>=r[0]&&t<r[1])s+=valorLead(l)}});return s}
+function tile(v,label,sub){return '<div class="stat"><b>'+v+'</b><span>'+label+'</span>'+(sub?'<small>'+sub+'</small>':'')+'</div>'}
+function barras(dias,key,fm){
+  var mx=Math.max.apply(null,dias.map(function(x){return x[key]}).concat([1]));
+  return '<div class="bars">'+dias.map(function(x){return '<div class="b" title="'+esc(fmtData(x.k)+': '+fm(x[key]))+'"><i style="height:'+(x[key]?Math.max(4,x[key]/mx*100):0)+'%"></i></div>'}).join('')+'</div><div class="bax"><span>'+fmtData(dias[0].k)+'</span><span>'+fmtData(dias[dias.length-1].k)+'</span></div>';
+}
+function renderDash(){
+  if(!loaded){$('#main').innerHTML='<div class="vazio">Carregando…</div>';return}
+  if(!leads.length){$('#main').innerHTML='<div class="empty"><h2>Sem dados para medir</h2><p>O dashboard aparece conforme os leads forem importados e os contatos registrados nos cartões.</p></div>';return}
+  var r=faixa(dashP),d=dashData(r),nb=leads.filter(function(l){return l.stage==='base'}).length;
+  var h='<div class="pchips" role="group" aria-label="Período">'+PERIODOS.map(function(p){return '<button class="btn sm" data-per="'+p[0]+'" aria-pressed="'+(dashP===p[0])+'">'+p[1]+'</button>'}).join('')+'<span class="prev">'+fmtData(dKey(r[0]))+(d.dias.length>1?' a '+fmtData(dKey(r[1]-1)):'')+'</span></div>';
+  h+='<div class="stats">'+tile(leads.length,'leads no total','na base '+nb+' · no funil '+(leads.length-nb))+tile(d.novos,'leads novos','cadastrados ou importados no período')+tile(d.lib,'liberados ao funil','entraram em Novo lead no período')+tile(d.cont,'leads contatados',d.ligs+' ligação(ões) no período')+tile(pct(d.resp,d.cont),'taxa de resposta',d.resp+' de '+d.cont+' contatados responderam')+'</div>';
+  h+='<div class="stats">'+tile(d.reun,'reuniões marcadas',pct(d.reun,d.cont)+' dos contatados')+tile(d.fech,'fechamentos',pct(d.fech,d.reun)+' das reuniões marcadas')+tile(pct(d.fech,d.cont),'taxa de fechamento','fechamentos ÷ leads contatados')+tile(esc(brl(d.rec)),'faturamento','valor dos pacotes fechados')+tile(d.perd,'recusas / perdidos',pct(d.perd,d.cont)+' dos contatados')+'</div>';
+  var f7=faixa('d7'),f15=faixa('d15'),f0=faixa('hoje');
+  h+='<div class="panel"><h3>Faturamento</h3><div class="stats">'+tile(esc(brl(recFaixa(f0))),'hoje')+tile(esc(brl(recFaixa(f7))),'últimos 7 dias')+tile(esc(brl(recFaixa(f15))),'últimos 15 dias')+tile(esc(brl(d.rec)),'no período selecionado')+'</div>';
+  if(d.dias.length>1)h+='<div class="cols2"><div><div class="prev" style="margin-bottom:6px">Faturamento por dia</div>'+barras(d.dias,'rec',brl)+'</div><div><div class="prev" style="margin-bottom:6px">Leads contatados por dia (contatos registrados)</div>'+barras(d.dias,'c',function(v){return v+' contato(s)'})+'</div></div>';
+  h+='<p class="note">Conta o valor do pacote no dia em que o cartão foi para Fechado (com 10% a menos quando marcado “à vista”). Mostra o que foi vendido, não o que já foi pago. Fechamentos anteriores a esta versão usam a data da última alteração do cartão.</p></div>';
+  // classes
+  if(isAdmin){
+  var ks=['A','B','C','S'].filter(function(k){return d.cls[k].cont||d.cls[k].fech||d.cls[k].reun});
+  var seg=ks.filter(function(k){return d.cls[k].fech}).map(function(k){var cl=CLASSES[k]||CLASSES.C,o=d.cls[k];return '<span style="flex:'+o.fech+';background:'+cl[0]+';color:'+cl[1]+'">'+(k==='S'?'Sem classe':'Classe '+k)+' '+Math.round(o.fech/d.fech*100)+'% ('+o.fech+')</span>'}).join('');
+  h+='<div class="panel"><h3>Classificação dos leads que fecharam</h3>'+(d.fech?'<div class="stack">'+seg+'</div>':'<p class="note" style="margin:0 0 8px">Sem fechamentos no período.</p>')+
+    '<div class="tw"><table><thead><tr><th>Classe</th><th class="num">Contatados</th><th class="num">Responderam</th><th class="num">Reuniões</th><th class="num">Fechamentos</th><th class="num">% dos fechamentos</th><th class="num">Fecham ÷ contatados</th></tr></thead><tbody>'+
+    (ks.map(function(k){var o=d.cls[k],cl=CLASSES[k]||CLASSES.C;return '<tr><td><span class="chip" style="background:'+cl[0]+';color:'+cl[1]+';font-weight:600">'+(k==='S'?'Sem classe':'Classe '+k)+'</span></td><td class="num">'+o.cont+'</td><td class="num">'+o.resp+'</td><td class="num">'+o.reun+'</td><td class="num">'+o.fech+'</td><td class="num">'+pct(o.fech,d.fech)+'</td><td class="num">'+pct(o.fech,o.cont)+'</td></tr>'}).join('')||'<tr><td colspan="7" class="prev">Sem atividade no período.</td></tr>')+
+    '</tbody></table></div><p class="note">A coluna final compara as classes de forma justa: se A fecha mais que B, e B mais que C, a classificação funciona. Com poucos leads por classe (menos de 30), a diferença pode ser acaso.</p></div>';
+  }
+  // grupos
+  var gs=Object.keys(d.grp).map(function(k){return d.grp[k]}).filter(function(g){return g.cont||g.reun||g.fech||g.perd}).sort(function(a,b){return (b.fech-a.fech)||(b.reun-a.reun)||(b.cont-a.cont)});
+  h+='<div class="panel"><h3>Desempenho por '+({especialidade:'nicho (especialidade)',cidade:'cidade',lote:'lote'}[dashG])+'</h3><div class="frow">'+sel('dashG',[['especialidade','Agrupar por nicho'],['cidade','Agrupar por cidade'],['lote','Agrupar por lote']],dashG)+'</div><div class="tw"><table><thead><tr><th>Grupo</th><th class="num">Contatados</th><th class="num">Responderam</th><th class="num">Reuniões</th><th class="num">Fechamentos</th><th class="num">Fecham ÷ contatados</th><th class="num">Faturamento</th><th class="num">Perdidos</th></tr></thead><tbody>'+
+    (gs.map(function(g){return '<tr><td><b>'+esc(g.nome)+'</b>'+(g.cont<10?' <span class="chip">amostra pequena</span>':'')+'</td><td class="num">'+g.cont+'</td><td class="num">'+g.resp+'</td><td class="num">'+g.reun+'</td><td class="num">'+g.fech+'</td><td class="num">'+pct(g.fech,g.cont)+'</td><td class="num">'+esc(brl(g.rec))+'</td><td class="num">'+g.perd+'</td></tr>'}).join('')||'<tr><td colspan="8" class="prev">Sem atividade no período.</td></tr>')+
+    '</tbody></table></div><p class="note">Com menos de 10 contatados, a taxa de um grupo engana. Use para decidir onde prospectar mais só depois de ter volume.</p></div>';
+  h+='<h2 class="sect">Acumulado desde o início</h2>'+acumuladoHtml();
+  $('#main').innerHTML=h;
+}
+
+/* ---------- Importar ---------- */
+var CAMPOS={nome:['nome','clinica','empresa','name'],cidade:['cidade','city','municipio'],especialidade:['especialidade','nicho','categoria','tipo'],telefone:['telefone','whatsapp','fone','celular','phone','tel'],google:['google','maps','link google','perfil google','google maps','url google'],instagram:['instagram','insta','ig'],site:['site','website'],endereco:['endereco','endereço','address'],horario:['horario','horário','horario de funcionamento','funcionamento'],avaliacoes:['avaliacoes','avaliações','reviews','qtd avaliacoes','numero de avaliacoes'],nota:['nota','rating','avaliacao','estrelas'],classe:['classe','classificacao','prioridade','potencial','nivel'],responsavel:['responsavel','decisor'],email:['email','e-mail'],origem:['origem'],obs:['observacoes','observacao','obs','notas']};
+function parseTabela(txt){
+  txt=String(txt||'').replace(/^﻿/,'').trim();if(!txt)return [];
+  if(txt[0]==='['||txt[0]==='{'){try{var j=JSON.parse(txt);return Array.isArray(j)?j:[j]}catch(e){}}
+  var first=txt.split(/\r?\n/)[0], sep=first.indexOf('\t')>=0?'\t':(first.split(';').length>first.split(',').length?';':',');
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<txt.length;i++){var ch=txt[i];
+    if(q){if(ch==='"'){if(txt[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===sep){row.push(cur);cur=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&txt[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur=''}
+    else cur+=ch;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row)}
+  if(rows.length<2)return [];
+  var head=rows[0].map(norm);
+  return rows.slice(1).filter(function(r){return r.some(function(c){return c.trim()})}).map(function(r){var o={};head.forEach(function(h,i){o[h]=(r[i]||'').trim()});return o});
+}
+function mapeia(o){
+  var keys={};Object.keys(o).forEach(function(k){keys[norm(k)]=o[k]});
+  var out={};
+  Object.keys(CAMPOS).forEach(function(c){for(var i=0;i<CAMPOS[c].length;i++){var v=keys[norm(CAMPOS[c][i])];if(v!=null&&String(v).trim()!==''){out[c]=String(v).trim();break}}});
+  if(out.avaliacoes)out.avaliacoes=parseInt(digits(out.avaliacoes),10)||0;
+  if(out.nota)out.nota=parseFloat(String(out.nota).replace(',','.'))||0;
+  if(out.classe){var cc=String(out.classe).trim().charAt(0).toUpperCase();if(CLASSES[cc])out.classe=cc;else delete out.classe}
+  return out;
+}
+function chaveLead(l){var d=digits(l.telefone);if(d.length>=8)return 't'+d.slice(-9);if(l.google)return 'g'+norm(l.google);return 'n'+norm(l.nome)+'|'+norm(l.cidade)}
+var importados=[], dupImport=0;
+function renderImportar(){
+  $('#main').innerHTML='<div class="imp"><h2>Importar leads</h2><p class="prev">Cole a planilha de prospecção (copie as células no Excel ou Google Planilhas e cole aqui) ou escolha um arquivo CSV. A primeira linha deve ter os nomes das colunas: Nome, Cidade, Especialidade, Telefone, Google, Instagram, Site, Endereço, Horário, Avaliações, Nota, Classe (A, B ou C). Clínicas que já estão na base ou no funil são ignoradas. Os leads entram na Base e você libera para o funil por lotes.</p>'+
+   '<textarea class="in" id="impTxt" aria-label="Planilha colada" placeholder="Nome&#9;Cidade&#9;Especialidade&#9;Telefone&#9;Google&#9;Instagram"></textarea>'+
+   '<div class="row"><input type="file" id="impArq" accept=".csv,.tsv,.txt,.json" aria-label="Arquivo CSV"><button class="btn" id="impLer">Conferir</button></div>'+
+   '<div class="grid"><div class="fld"><label for="impLote">Nome do lote (nicho, cidade, data)</label><input class="in" id="impLote" value="'+esc(hoje())+'"></div><div class="fld"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="impDireto"> Enviar direto ao funil (sem passar pela Base)</label></div></div>'+
+   '<div class="prev" id="impPrev"></div><div class="row"><button class="btn pri" id="impGo" disabled>Importar</button></div></div>';
+}
+function conferirImport(){
+  var linhas=parseTabela($('#impTxt').value).map(mapeia).filter(function(l){return l.nome});
+  var existentes={};leads.forEach(function(l){existentes[chaveLead(l)]=1});
+  var vistos={}, novos=[], dup=0;
+  linhas.forEach(function(l){var k=chaveLead(l);if(existentes[k]||vistos[k]){dup++;return}vistos[k]=1;novos.push(l)});
+  importados=novos;dupImport=dup;
+  $('#impPrev').textContent=!linhas.length?'Nenhuma linha reconhecida. Confira se a primeira linha tem os nomes das colunas e se há uma coluna Nome.':novos.length+' lead(s) novo(s) para importar'+(dup?'; '+dup+' ignorado(s) por já existirem.':'.');
+  $('#impGo').disabled=!novos.length||!canWrite;
+  if(!novos.length&&dup)avisoDup(dup,0);
+}
+function avisoDup(dup,novos){
+  openId='__aviso';
+  $('#modalRoot').innerHTML='<div class="veil" id="veil"><div class="modal" style="width:min(440px,100%)" role="alertdialog" aria-modal="true" aria-label="Importação"><div class="mh"><h2>'+(novos?'Importação concluída':'Nada novo para importar')+'</h2></div><p style="margin:0">'+dup+' '+(dup===1?'importação foi ignorada':'importações foram ignoradas')+' por já estar'+(dup===1?'':'em')+' cadastrada'+(dup===1?'':'s')+' (duplicada'+(dup===1?'':'s')+').'+(novos?' '+novos+' '+(novos===1?'lead novo foi importado.':'leads novos foram importados.'):'')+'</p><div class="row"><button class="btn pri" id="mFechar">Fechar</button></div></div></div>';
+  document.body.style.overflow='hidden';
+}
+async function importar(){
+  var btn=$('#impGo');btn.disabled=true;var lote=($('#impLote').value.trim()||hoje()),direto=$('#impDireto').checked,n=0,agora=Date.now();
+  try{
+    for(var i=0;i<importados.length;i+=5){
+      await Promise.all(importados.slice(i,i+5).map(function(l,j){
+        return db.collection('leads').add(Object.assign({},l,{stage:direto?'novo':'base',contatos:[],esboco:'nao',lote:lote,criadoEm:agora+i+j,atualizadoEm:agora}));
+      }));
+      n=Math.min(i+5,importados.length);$('#impPrev').textContent='Importando… '+n+' de '+importados.length;
+    }
+    var tot=importados.length,dn=dupImport;toast(tot+' leads importados');importados=[];dupImport=0;location.hash=direto?'funil':'base';if(dn)avisoDup(dn,tot);
+  }catch(e){toast('A importação parou em '+n+' lead(s): '+(e&&e.code==='quota_exceeded'?'limite de documentos atingido':'tente de novo (já importados serão ignorados)'));btn.disabled=false}
+}
+
+/* ---------- Modal do lead ---------- */
+function fld(id,label,val,type,extra){return '<div class="fld"><label for="'+id+'">'+label+'</label><input class="in" id="'+id+'" type="'+(type||'text')+'" value="'+esc(val)+'" '+(extra||'')+'></div>'}
+function linkOu(href,txt){return href?'<a class="link" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(txt)+'</a>':''}
+function abrirModal(id){
+  var l=byId[id];if(!l)return;openId=id;
+  var ro=canWrite?'':' disabled';
+  var h='<div class="veil" id="veil"><div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(l.nome)+'">'+
+   '<div class="mh"><h2>'+esc(l.nome||'Sem nome')+'</h2><button class="btn sm" id="mCopiar">Copiar resumo</button><button class="btn sm" id="mFechar" aria-label="Fechar">Fechar</button></div>'+
+   '<div class="sec"><h3>Etapa</h3><div class="stages" id="mEtapas">'+ETAPAS_ALL.map(function(e){return '<button class="btn sm" style="--cac:'+e.ac+'" data-st="'+e.id+'" aria-pressed="'+((l.stage||'novo')===e.id)+'"'+ro+'>'+esc(e.nome)+'</button>'}).join('')+'</div></div>'+
+   '<div class="sec"><h3>Registrar contato</h3><div class="grid">'+
+     '<div class="fld"><label for="cCanal">Canal</label><select class="in" id="cCanal"'+ro+'>'+CANAIS.map(function(c){return '<option>'+c+'</option>'}).join('')+'</select></div>'+
+     '<div class="fld"><label for="cRes">Resultado</label><select class="in" id="cRes"'+ro+'>'+RESULT.map(function(r){return '<option value="'+r.id+'">'+esc(r.nome)+'</option>'}).join('')+'</select></div>'+
+     fld('cNota','Anotação (opcional)','','text',ro)+'</div><div class="row"><button class="btn pri" id="cGo"'+ro+'>Registrar</button><span class="prev" id="cDica"></span></div></div>'+
+   '<div class="sec"><h3>Dados da clínica</h3><div class="grid">'+
+     fld('dNome','Nome',l.nome,'text',ro)+fld('dEsp','Especialidade',l.especialidade,'text',ro)+fld('dCid','Cidade',l.cidade,'text',ro)+fld('dResp','Responsável / quem atende',l.responsavel,'text',ro)+fld('dMail','E-mail',l.email,'text',ro)+origemSel('dOri',l.origem,ro)+classeSel('dCls',l.classe,ro)+
+     fld('dTel','Telefone / WhatsApp',l.telefone,'text',ro)+fld('dIg','Instagram',l.instagram,'text',ro)+fld('dGo','Link do Google',l.google,'text',ro)+
+     fld('dSite','Site atual',l.site,'text',ro)+fld('dEnd','Endereço',l.endereco,'text',ro)+fld('dHor','Horário de funcionamento',l.horario,'text',ro)+
+     fld('dAv','Nº de avaliações',l.avaliacoes||'','number',ro+' min="0"')+fld('dNt','Nota',l.nota||'','number',ro+' min="0" max="5" step="0.1"')+'</div>'+
+     '<div class="row" id="mLinks">'+[linkOu(waLink(l.telefone),'Abrir WhatsApp'),linkOu(igLink(l.instagram),'Abrir Instagram'),linkOu(safeUrl(l.google),'Abrir Google'),linkOu(safeUrl(l.site),'Abrir site atual')].filter(Boolean).join(' · ')+'</div></div>'+
+   '<div class="sec"><h3>Reunião e proposta</h3><div class="grid">'+
+     fld('rData','Data e hora da reunião',l.reuniao||'','datetime-local',ro)+
+     '<div class="fld"><label for="rPac">Pacote</label><select class="in" id="rPac"'+ro+'><option value="">Ainda não definido</option>'+Object.keys(PRECOS).map(function(k){return '<option value="'+k+'"'+(l.pacote===k?' selected':'')+'>'+NOMES[k]+' · '+brl(PRECOS[k])+'</option>'}).join('')+'</select></div>'+
+     '<div class="fld"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="rVista"'+(l.avista?' checked':'')+ro+'> À vista, com 10% de desconto</label></div></div>'+
+     '<div class="row">Valor: <span class="val" id="rVal"></span></div>'+
+     '<div class="row"><a class="btn sm" data-notif="'+esc(l.id)+'" href="'+esc(notifHref(l))+'" target="_blank" rel="noopener">Notificar Filipe pelo WhatsApp</a><span class="prev">Copia os dados e abre o WhatsApp. Salve o cartão antes, para a mensagem sair completa.</span>'+(l.notificadoEm?'<span class="chip ok">Notificado '+esc(rel(l.notificadoEm))+'</span>':'')+'</div></div>'+
+   '<div class="sec"><h3>Follow-up</h3><div class="grid"><div class="fld"><label for="pTipo">Tipo</label><select class="in" id="pTipo"'+ro+'><option value="">Nenhum</option>'+tipos().map(function(t){return '<option value="'+esc(t.id)+'"'+((l.proxAcao&&l.proxAcao.tipo)===t.id?' selected':'')+'>'+esc(t.nome)+'</option>'}).join('')+'</select></div>'+
+     fld('pData','Data',(l.proxAcao&&l.proxAcao.data)||'','date',ro)+
+     '<div class="fld"><label for="pCanal">Canal</label><select class="in" id="pCanal"'+ro+'>'+CANAIS.map(function(c){return '<option'+((l.proxAcao&&l.proxAcao.canal)===c?' selected':'')+'>'+c+'</option>'}).join('')+'</select></div>'+
+     fld('pTxt','O que fazer',(l.proxAcao&&l.proxAcao.texto)||'','text',ro)+'</div><div class="row"><button class="btn sm" id="pConcluir"'+ro+'>Concluir follow-up</button></div></div>'+
+   '<div class="sec"><h3>Esboço do site</h3><div class="grid"><div class="fld"><label for="eSt">Situação</label><select class="in" id="eSt"'+ro+'>'+[['nao','Sem esboço'],['pedido','Pedido ao Filipe'],['pronto','Pronto']].map(function(o){return '<option value="'+o[0]+'"'+((l.esboco||'nao')===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></div>'+
+     fld('eLink','Link do esboço',l.esbocoLink||'','text',ro)+'</div>'+
+     '<div class="fld"><label for="eObs">Instruções para o esboço (cores, logo, tratamento a destacar)</label><textarea class="in" id="eObs" rows="3"'+ro+'>'+esc(l.esbocoObs||'')+'</textarea></div></div>'+
+   '<div class="sec"><h3>Motivo e observações</h3><div class="grid">'+fld('mMot','Motivo da dúvida ou recusa (nas palavras do cliente)',l.motivo||'','text',ro)+'</div>'+
+     '<div class="fld"><label for="mObs">Observações</label><textarea class="in" id="mObs" rows="3"'+ro+'>'+esc(l.obs||'')+'</textarea></div></div>'+
+   '<div class="row"><button class="btn pri" id="mSalvar"'+ro+'>Salvar alterações</button><button class="btn bad" id="mDel"'+ro+'>Excluir lead</button><span id="mConf"></span></div>'+
+   '<div class="sec"><h3>Histórico de contatos</h3><div class="hist" id="mHist"></div></div>'+
+  '</div></div>';
+  $('#modalRoot').innerHTML=h;document.body.style.overflow='hidden';
+  atualizaValor();histModal();
+  $('#cRes').addEventListener('change',dicaRes);dicaRes();
+  ['rPac','rVista'].forEach(function(i){$('#'+i).addEventListener('change',atualizaValor)});
+  $('#pTipo').addEventListener('change',function(){var t=tipos().find(function(x){return x.id===$('#pTipo').value});if(t){$('#pCanal').value=t.canal;if(!$('#pData').value)$('#pData').value=addDias(t.dias)}});
+}
+function fecharModal(){openId=null;$('#modalRoot').innerHTML='';document.body.style.overflow=''}
+function dicaRes(){
+  var res=$('#cRes').value,r=RESULT.find(function(x){return x.id===res}),s=r&&r.sug,tg=tipos().find(function(t){return t.gatilho===res});
+  $('#cDica').textContent=s?'Move o cartão para “'+etapaDe(s).nome+'”.':(tg?'Agenda o follow-up “'+tg.nome+'” para daqui a '+tg.dias+' dia(s).':'');
+}
+function atualizaValor(){
+  var pac=$('#rPac').value, v=pac?PRECOS[pac]*($('#rVista').checked?0.9:1):0;
+  $('#rVal').textContent=pac?brl(v):'–';
+}
+async function histModal(){
+  var el=$('#mHist');if(!el||!openId)return;var l=byId[openId];if(!l)return;
+  var cs=(l.contatos||[]).slice().reverse();
+  if(!cs.length){el.innerHTML='<div class="vazio">Nenhum contato registrado.</div>';return}
+  var nomes={};
+  if(userNs){try{var ids=Array.from(new Set(cs.map(function(c){return c.por}).filter(Boolean)));if(ids.length){var ps=await userNs.profiles(ids);ids.forEach(function(i){nomes[i]=ps[i]&&ps[i].name||''})}}catch(e){}}
+  el=$('#mHist');if(!el)return;
+  el.innerHTML=cs.map(function(c){var r=RESULT.find(function(x){return x.id===c.resultado})||{nome:''};
+    return '<div class="h"><b>'+esc(c.canal)+'</b> · '+esc(r.nome)+' <small>'+esc(new Date(c.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+(nomes[c.por]?' · '+esc(nomes[c.por]):'')+'</small>'+(c.nota?'<div>'+esc(c.nota)+'</div>':'')+'</div>'}).join('');
+}
+function lerCampos(){
+  var g=function(i){return $('#'+i).value.trim()};
+  var p={nome:g('dNome'),especialidade:g('dEsp'),cidade:g('dCid'),telefone:g('dTel'),responsavel:g('dResp'),email:g('dMail'),origem:$('#dOri').value,classe:$('#dCls')?$('#dCls').value:undefined,instagram:g('dIg'),google:g('dGo'),site:g('dSite'),endereco:g('dEnd'),horario:g('dHor'),
+    avaliacoes:parseInt(g('dAv'),10)||0,nota:parseFloat(g('dNt'))||0,reuniao:g('rData'),pacote:g('rPac'),avista:$('#rVista').checked,
+    proxAcao:(g('pData')||$('#pTipo').value)?{tipo:$('#pTipo').value,data:g('pData'),canal:$('#pCanal').value,texto:g('pTxt')}:null,
+    esboco:$('#eSt').value,esbocoLink:g('eLink'),esbocoObs:$('#eObs').value.trim(),motivo:g('mMot'),obs:$('#mObs').value.trim()};
+  return p;
+}
+function resumo(l){
+  var L=['Lead: '+l.nome,'Etapa: '+etapaDe(l.stage||'novo').nome];
+  [['Especialidade',l.especialidade],['Cidade',l.cidade],['Responsável',l.responsavel],['Origem',l.origem],['Classe',isAdmin?l.classe:''],['Lote',l.lote],['Telefone',l.telefone],['E-mail',l.email],['Instagram',l.instagram],['Google',l.google],['Site atual',l.site],['Endereço',l.endereco],['Horário',l.horario],['Avaliações',l.avaliacoes],['Nota',l.nota],['Reunião',fmtDataHora(l.reuniao)],['Pacote',l.pacote?NOMES[l.pacote]+' '+brl(valorLead(l)):''],['Instruções do esboço',l.esbocoObs],['Motivo',l.motivo],['Observações',l.obs]].forEach(function(p){if(p[1])L.push(p[0]+': '+p[1])});
+  (l.contatos||[]).forEach(function(c){L.push('- '+new Date(c.t).toLocaleDateString('pt-BR')+' '+c.canal+': '+((RESULT.find(function(r){return r.id===c.resultado})||{}).nome||'')+(c.nota?' ('+c.nota+')':''))});
+  return L.join('\n');
+}
+
+
+var ORIGENS=['Prospecção (Google)','Indicação','Presencial','Instagram','WhatsApp','Outro'];
+function classeSel(id,val,ro){if(!isAdmin)return '';return '<div class="fld"><label for="'+id+'">Classe (chance de fechar)</label><select class="in" id="'+id+'"'+(ro||'')+'><option value="">Sem classe</option>'+['A','B','C'].map(function(c){return '<option'+(val===c?' selected':'')+'>'+c+'</option>'}).join('')+'</select></div>'}
+function origemSel(id,val,ro){return '<div class="fld"><label for="'+id+'">Como chegou</label><select class="in" id="'+id+'"'+(ro||'')+'><option value="">Não informado</option>'+ORIGENS.map(function(o){return '<option'+(val===o?' selected':'')+'>'+o+'</option>'}).join('')+'</select></div>'}
+function abrirNovo(){
+  if(!canWrite){toast('Peça acesso de Contribuidor ao Filipe para cadastrar leads');return}
+  openId='__novo';
+  var h='<div class="veil" id="veil"><div class="modal" role="dialog" aria-modal="true" aria-label="Novo lead">'+
+   '<div class="mh"><h2>Novo lead</h2><button class="btn sm" id="mFechar">Fechar</button></div>'+
+   '<p class="prev" style="margin:0">Preencha o que tiver. Nenhum campo é obrigatório e tudo pode ser completado depois, no cartão.</p>'+
+   '<div class="sec"><h3>Clínica</h3><div class="grid">'+fld('nNome','Nome da clínica','')+fld('nEsp','Especialidade','')+fld('nCid','Cidade','')+fld('nResp','Responsável / quem atende','')+origemSel('nOri','')+classeSel('nCls','')+'</div></div>'+
+   '<div class="sec"><h3>Contato e redes</h3><div class="grid">'+fld('nTel','Telefone / WhatsApp','')+fld('nMail','E-mail','')+fld('nIg','Instagram (@ ou link)','')+fld('nSite','Site atual','')+'</div></div>'+
+   '<div class="sec"><h3>Google</h3><div class="grid">'+fld('nGo','Link do perfil no Google','')+fld('nEnd','Endereço','')+fld('nHor','Horário de funcionamento','')+fld('nAv','Nº de avaliações','','number','min="0"')+fld('nNt','Nota','','number','min="0" max="5" step="0.1"')+'</div></div>'+
+   '<div class="sec"><h3>Etapa e observações</h3><div class="grid"><div class="fld"><label for="nEt">Etapa inicial</label><select class="in" id="nEt">'+ETAPAS_ALL.map(function(e){return '<option value="'+e.id+'">'+esc(e.nome)+'</option>'}).join('')+'</select></div></div>'+
+   '<div class="fld"><label for="nObs">Observações</label><textarea class="in" id="nObs" rows="3"></textarea></div></div>'+
+   '<div class="row"><button class="btn pri" id="nvSalvar">Cadastrar lead</button></div></div></div>';
+  $('#modalRoot').innerHTML=h;document.body.style.overflow='hidden';$('#nNome').focus();$('#nEt').value='novo';
+}
+function salvarNovo(){
+  var g=function(i){return $('#'+i).value.trim()};
+  var l={nome:g('nNome'),especialidade:g('nEsp'),cidade:g('nCid'),responsavel:g('nResp'),origem:$('#nOri').value,classe:$('#nCls')?$('#nCls').value:'',telefone:g('nTel'),email:g('nMail'),instagram:g('nIg'),site:g('nSite'),google:g('nGo'),endereco:g('nEnd'),horario:g('nHor'),avaliacoes:parseInt(g('nAv'),10)||0,nota:parseFloat(g('nNt'))||0,obs:$('#nObs').value.trim()};
+  var k=chaveLead(l), dup=digits(l.telefone).length>=8||l.google?leads.find(function(x){return chaveLead(x)===k}):null;
+  if(dup){fecharModal();toast('Esse lead já existe: '+(dup.nome||'sem nome'));abrirModal(dup.id);return}
+  var et=$('#nEt').value, agora=Date.now();
+  $('#nvSalvar').disabled=true;
+  db.collection('leads').add(Object.assign(l,{stage:et,contatos:[],esboco:et==='reuniao'?'pedido':'nao',lote:'manual',criadoEm:agora,atualizadoEm:agora})).then(function(){fecharModal();toast('Lead cadastrado em '+etapaDe(et).nome)},function(e){toast('Não foi possível cadastrar'+(e&&e.code==='quota_exceeded'?': limite de leads atingido':''));var b=$('#nvSalvar');if(b)b.disabled=false});
+}
+
+function lotesUnicos(){var o={};leads.forEach(function(l){if(l.lote)o[l.lote]=1});return Object.keys(o).sort()}
+function canalFechou(l){var c=(l.contatos||[]).filter(function(x){return x.resultado==='fechou'}).pop();return c?c.canal:''}
+function baseFiltrados(){
+  var q=norm(baseF.q);
+  var arr=leads.filter(function(l){
+    var st=l.stage||'novo';
+    if(baseF.st==='base'&&st!=='base')return false;
+    if(baseF.st==='funil'&&st==='base')return false;
+    if(baseF.st==='fechados'&&['fechado','entregue'].indexOf(st)<0)return false;
+    if(baseF.st==='perdidos'&&st!=='perdido')return false;
+    if(baseF.cl==='sem'&&CLASSES[l.classe])return false;
+    if(CLASSES[baseF.cl]&&l.classe!==baseF.cl)return false;
+    if(baseF.lote!=='todos'&&l.lote!==baseF.lote)return false;
+    if(!q)return true;
+    return norm([l.nome,l.cidade,l.especialidade,l.telefone,l.instagram,l.responsavel].join(' ')).indexOf(q)>=0;
+  });
+  var idx=function(l){return ETAPAS_ALL.findIndex(function(e){return e.id===(l.stage||'novo')})};
+  var o={classe:function(a,b){return String(a.classe||'Z').localeCompare(String(b.classe||'Z'))||((a.criadoEm||0)-(b.criadoEm||0))},
+    nome:function(a,b){return norm(a.nome).localeCompare(norm(b.nome))},
+    recentes:function(a,b){return (b.criadoEm||0)-(a.criadoEm||0)},
+    status:function(a,b){return idx(a)-idx(b)}}[baseF.ord];
+  return arr.sort(o);
+}
+function sel(id,opts,cur){return '<select class="in" id="'+id+'">'+opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>'}
+function renderBase(){
+  if(!loaded){$('#main').innerHTML='<div class="vazio">Carregando…</div>';return}
+  if(!leads.length){$('#main').innerHTML='<div class="empty"><h2>A base está vazia</h2><p>Aqui ficam todos os leads prospectados, classificados em A, B e C. Importe a lista da prospecção ou peça ao Filipe para carregar.</p><div class="row"><button class="btn pri" data-go="importar">Importar lista</button><button class="btn" data-new="1">Cadastrar lead</button></div></div>';return}
+  var lotes=[['todos','Todos os lotes']].concat(lotesUnicos().map(function(x){return [x,x]}));
+  $('#main').innerHTML=
+   '<div class="panel" id="bLib"><h3>Liberar para o funil</h3><div class="grid">'+
+     fld('lbQtd','Quantos liberar',prop.qtd,'number','min="1"')+fld('lbA','% Classe A',prop.a,'number','min="0" max="100"')+fld('lbB','% Classe B',prop.b,'number','min="0" max="100"')+fld('lbC','% Classe C',prop.c,'number','min="0" max="100"')+
+     '<div class="fld"><label for="lbOrd">Quais leads de cada classe</label>'+sel('lbOrd',[['aleatoria','Sorteio (mais justo para testar a classificação)'],['antigos','Os mais antigos primeiro']],prop.ordem)+'</div></div>'+
+     '<p class="prev" id="bLibInfo"></p><div class="row"><button class="btn pri" id="bLibGo"'+(canWrite?'':' disabled')+'>Liberar para Novo lead</button></div></div>'+
+   '<div class="frow"><input class="in" id="bBusca" type="search" placeholder="Buscar na base" aria-label="Buscar na base" value="'+esc(baseF.q)+'" style="min-width:200px">'+
+     sel('bSt',[['todos','Todos os status'],['base','Só na base'],['funil','Só no funil'],['fechados','Fechados e entregues'],['perdidos','Perdidos']],baseF.st)+
+     sel('bCl',[['todas','Todas as classes'],['A','Classe A'],['B','Classe B'],['C','Classe C'],['sem','Sem classe']],baseF.cl)+
+     sel('bLote',lotes,baseF.lote)+
+     sel('bOrd',[['classe','Ordenar: classe'],['nome','Ordenar: nome'],['recentes','Ordenar: mais recentes'],['status','Ordenar: status']],baseF.ord)+'</div>'+
+   '<div id="bBulk"></div><div class="panel" id="bTab" style="padding:8px"></div>';
+  renderBaseTabela();atualizaLiberar();
+}
+function renderBaseTabela(){
+  var el=$('#bTab');if(!el)return;
+  var arr=baseFiltrados(), show=arr.slice(0,baseF.max), ro=canWrite?'':' disabled';
+  var rows=show.map(function(l){
+    var e=l.stage==='base'?BASE_ETAPA:etapaDe(l.stage||'novo');
+    return '<tr data-row="'+esc(l.id)+'"><td><input type="checkbox" data-sel="'+esc(l.id)+'"'+(baseF.sel[l.id]?' checked':'')+' aria-label="Selecionar"></td>'+
+     '<td><select class="in cls" data-cls="'+esc(l.id)+'"'+ro+' aria-label="Classe"><option value="">–</option>'+['A','B','C'].map(function(c){return '<option'+(l.classe===c?' selected':'')+'>'+c+'</option>'}).join('')+'</select></td>'+
+     '<td><b>'+esc(l.nome||'Sem nome')+'</b></td><td>'+esc(l.cidade||'')+'</td><td>'+esc(l.especialidade||'')+'</td><td>'+esc(l.telefone||'')+'</td>'+
+     '<td class="num">'+(l.nota?esc(String(l.nota).replace('.',','))+' ★':'')+(l.avaliacoes?' ('+esc(l.avaliacoes)+')':'')+'</td>'+
+     '<td><span class="chip" style="background:'+e.bg+';color:'+e.tx+'">'+esc(e.nome)+'</span></td><td>'+fuChip(l)+'</td><td>'+esc(canalFechou(l))+'</td><td>'+esc(l.lote||'')+'</td></tr>';
+  }).join('');
+  var allSel=show.length&&show.every(function(l){return baseF.sel[l.id]});
+  el.innerHTML='<div class="prev" style="padding:2px 4px 8px">'+arr.length+' lead(s) com este filtro'+(arr.length>show.length?'; mostrando '+show.length:'')+'</div><div class="tw"><table><thead><tr><th><input type="checkbox" id="bAll"'+(allSel?' checked':'')+' aria-label="Selecionar todos"></th><th>Classe</th><th>Clínica</th><th>Cidade</th><th>Especialidade</th><th>Telefone</th><th class="num">Google</th><th>Status</th><th>Follow-up</th><th>Fechou por</th><th>Lote</th></tr></thead><tbody>'+(rows||'<tr><td colspan="11" class="prev">Nenhum lead com este filtro.</td></tr>')+'</tbody></table></div>'+(arr.length>show.length?'<div class="row" style="padding:8px"><button class="btn" id="bMais">Mostrar mais '+Math.min(150,arr.length-show.length)+'</button></div>':'');
+  var n=Object.keys(baseF.sel).filter(function(k){return baseF.sel[k]&&byId[k]}).length, b=$('#bBulk');
+  b.innerHTML=n?'<div class="bulk"><b>'+n+' selecionado(s)</b><button class="btn sm" data-bulk="funil"'+ro+'>Enviar ao funil</button><button class="btn sm" data-bulk="base"'+ro+'>Voltar à base</button>'+['A','B','C'].map(function(c){return '<button class="btn sm" data-bulk="cls'+c+'"'+ro+'>Classe '+c+'</button>'}).join('')+'<button class="btn sm" data-bulk="limpar">Limpar seleção</button></div>':'';
+}
+function planoLiberar(){
+  var qtd=parseInt($('#lbQtd').value,10)||0,a=parseFloat($('#lbA').value)||0,b=parseFloat($('#lbB').value)||0,c=parseFloat($('#lbC').value)||0;
+  var disp={A:0,B:0,C:0};leads.forEach(function(l){if(l.stage==='base'&&disp[l.classe]!==undefined)disp[l.classe]++});
+  var w={A:a,B:b,C:c};
+  function reparte(cap){var p={A:0,B:0,C:0};
+    for(var i=0;i<qtd;i++){var best=null,bv=-1;['A','B','C'].forEach(function(k){if(w[k]<=0||p[k]>=cap[k])return;var v=w[k]/(p[k]+1);if(v>bv){bv=v;best=k}});if(!best)break;p[best]++}
+    return p}
+  var ped=reparte({A:1e9,B:1e9,C:1e9}),plano=reparte(disp);
+  return {qtd:qtd,soma:a+b+c,disp:disp,ped:ped,plano:plano,total:plano.A+plano.B+plano.C,a:a,b:b,c:c};
+}
+function atualizaLiberar(){
+  var el=$('#bLibInfo');if(!el||!$('#lbQtd'))return;var p=planoLiberar(),novos=leads.filter(function(l){return l.stage==='novo'}).length;
+  var falta=['A','B','C'].filter(function(k){return p.ped[k]>p.plano[k]&&p.disp[k]<p.ped[k]});
+  var red=falta.length&&['A','B','C'].some(function(k){return p.plano[k]>p.ped[k]})?' Falta estoque da classe '+falta.join(' e ')+' (ideal '+falta.map(function(k){return p.ped[k]}).join(' e ')+', disponível '+falta.map(function(k){return p.disp[k]}).join(' e ')+'): o restante foi redistribuído entre as outras classes, mantendo a proporção entre elas.':'';
+  el.textContent='Vai liberar A '+p.plano.A+' de '+p.disp.A+' disponíveis · B '+p.plano.B+' de '+p.disp.B+' · C '+p.plano.C+' de '+p.disp.C+'. Total: '+p.total+(p.total<p.qtd?' (a base não tem leads suficientes nas classes com porcentagem maior que zero)':'')+'.'+red+' Hoje há '+novos+' cartão(ões) em Novo lead.'+(Math.round(p.soma)!==100?' As porcentagens somam '+Math.round(p.soma)+'; o cálculo ajusta a proporção.':'');
+}
+function embaralha(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+async function liberar(){
+  if(!canWrite)return;var p=planoLiberar();if(!p.total){toast('Nada para liberar com esta proporção');return}
+  var ordem=$('#lbOrd').value,ids=[];
+  ['A','B','C'].forEach(function(c){
+    var cand=leads.filter(function(l){return l.stage==='base'&&l.classe===c});
+    cand=ordem==='antigos'?cand.sort(function(a,b){return (a.criadoEm||0)-(b.criadoEm||0)}):embaralha(cand);
+    cand.slice(0,p.plano[c]).forEach(function(l){ids.push(l.id)});
+  });
+  var btn=$('#bLibGo');btn.disabled=true;
+  try{
+    var agora=Date.now();
+    for(var i=0;i<ids.length;i+=5){await Promise.all(ids.slice(i,i+5).map(function(id){return save(id,{stage:'novo',liberadoEm:agora})}))}
+    prop={a:p.a,b:p.b,c:p.c,qtd:p.qtd,ordem:ordem};
+    db.collection('config').doc('proporcao').set(prop).catch(function(){});
+    toast(ids.length+' leads liberados para Novo lead');
+  }catch(e){toast('A liberação parou no meio; confira a lista')}
+  var b2=$('#bLibGo');if(b2)b2.disabled=false;
+}
+async function lote(ids,patchFn){
+  for(var i=0;i<ids.length;i+=5){await Promise.all(ids.slice(i,i+5).map(function(id){return save(id,patchFn(byId[id]))}))}
+}
+
+var cfgWork=null;
+function abrirCfg(){
+  if(!canWrite){toast('Só quem tem acesso de Contribuidor pode editar as configurações');return}
+  cfgTel=notifTel;cfgWork=tipos().map(function(t){return Object.assign({},t)});openId='__cfg';desenhaCfg();
+}
+function desenhaCfg(){
+  var h='<div class="veil" id="veil"><div class="modal" role="dialog" aria-modal="true" aria-label="Configurações"><div class="mh"><h2>Configurações</h2><button class="btn sm" id="mFechar">Fechar</button></div>'+
+   '<div class="sec"><h3>Notificação ao Filipe</h3><div class="grid">'+fld('cfTel','WhatsApp do Filipe (com DDD)',cfgTel,'text','placeholder="31999999999" inputmode="tel"')+'</div><p class="prev" style="margin:0">Usado pelo botão Notificar nos cartões. Sem número, o WhatsApp abre e a SDR escolhe o contato.</p></div>'+
+   '<h3 style="font-size:15px">Tipos de follow-up</h3><p class="prev" style="margin:0">Cada tipo define o canal e o prazo padrão. O gatilho agenda o follow-up sozinho quando o resultado do contato for o escolhido.</p>';
+  cfgWork.forEach(function(t,i){
+    h+='<div class="sec"><div class="grid">'+fld('cfN'+i,'Nome',t.nome)+
+     '<div class="fld"><label for="cfC'+i+'">Cor</label><select class="in" id="cfC'+i+'">'+Object.keys(CORES).map(function(k){return '<option value="'+k+'"'+(t.cor===k?' selected':'')+'>'+CORES[k][2]+'</option>'}).join('')+'</select></div>'+
+     '<div class="fld"><label for="cfK'+i+'">Canal</label><select class="in" id="cfK'+i+'">'+CANAIS.map(function(c){return '<option'+(t.canal===c?' selected':'')+'>'+c+'</option>'}).join('')+'</select></div>'+
+     fld('cfD'+i,'Prazo (dias)',t.dias,'number','min="0"')+
+     '<div class="fld"><label for="cfG'+i+'">Agendar sozinho quando o resultado for</label><select class="in" id="cfG'+i+'"><option value="">Nunca (só manual)</option>'+RESULT.map(function(r){return '<option value="'+r.id+'"'+(t.gatilho===r.id?' selected':'')+'>'+esc(r.nome)+'</option>'}).join('')+'</select></div></div>'+
+     '<div class="row"><button class="btn sm bad" data-cfgdel="'+i+'">Remover</button></div></div>';
+  });
+  h+='<div class="row"><button class="btn" id="cfgAdd">+ Novo tipo</button><button class="btn pri" id="cfgSalvar">Salvar tipos</button></div></div></div>';
+  $('#modalRoot').innerHTML=h;document.body.style.overflow='hidden';
+}
+function lerCfg(){
+  if($('#cfTel'))cfgTel=$('#cfTel').value.trim();
+  cfgWork.forEach(function(t,i){t.nome=$('#cfN'+i).value.trim();t.cor=$('#cfC'+i).value;t.canal=$('#cfK'+i).value;t.dias=parseInt($('#cfD'+i).value,10)||0;t.gatilho=$('#cfG'+i).value});
+}
+
+
+/* ---------- Manual da SDR ---------- */
+var DEFAULT_MANUAL=[{"cat": "prod", "t": "Os três pacotes", "b": "- Landing Page, R$ 800: 1 página única, 5 a 7 seções, um único foco. Botão de WhatsApp e mapa. 1 rodada de ajustes.\n- Site Padrão, R$ 1.200 (carro-chefe): 2 páginas, Início (até 6 seções) e Tratamentos. WhatsApp, mapa, horários e Instagram. 2 rodadas de ajustes.\n- Site Ampliado, R$ 1.700: 3 a 4 páginas (Início, Tratamentos, Sobre/Equipe e mais 1), perguntas frequentes e formulário de pedido de avaliação. 2 rodadas.\n\nComece sempre oferecendo o Padrão."}, {"cat": "prod", "t": "Vale para os três pacotes", "b": "- Identidade do cliente: logo, cores e fotos que ele enviar.\n- Funciona bem no celular.\n- Prazo de até 5 dias úteis depois da entrada paga e do recebimento das informações.\n- Pagamento: 50% de entrada e 50% na publicação.\n- Publicação com endereço próprio (.com.br). O registro do domínio é pago pelo cliente, em torno de R$ 40 por ano.\n- Título e descrição configurados para o Google. Não prometemos posição nas buscas.\n- Manutenção mensal opcional: R$ 99 por mês, com hospedagem e até 2 alterações por mês. Sem o plano, cada alteração é orçada à parte.", "pend": true}, {"cat": "prod", "t": "Landing page (R$ 800) x Site Padrão (R$ 1.200)", "b": "- A landing page tem uma página e um objetivo: fazer a pessoa chamar no WhatsApp por um serviço. Não tem menu nem páginas internas.\n- O site é a presença da clínica inteira: apresenta clínica, equipe e ambiente, e tem uma página só de tratamentos.\n- Se a clínica só quer divulgar um procedimento em anúncio, a landing page atende. Não empurre o site nesse caso.", "c": "A landing page é uma vitrine de um serviço só, boa para anúncio. O site é a clínica inteira: mais de um tratamento, quem é o responsável, o ambiente. Por isso custa mais."}, {"cat": "prod", "t": "Site Padrão (R$ 1.200) x Ampliado (R$ 1.700)", "b": "- O Ampliado serve a clínica com mais tratamentos ou mais profissionais: página Sobre/Equipe, uma página extra, perguntas frequentes e formulário de pedido de avaliação.\n- Para a maioria das clínicas pequenas, o Padrão resolve.", "c": "O Padrão já tem tudo para a clínica ser encontrada e receber contatos. O Ampliado acrescenta mais páginas e um formulário, para quem tem muitos tratamentos ou uma equipe maior."}, {"cat": "prod", "t": "Desconto máximo (só à vista)", "b": "Até 10%, e só para pagamento à vista (100% na entrada). Não ofereça por iniciativa própria: use apenas para fechar uma objeção de preço. Acima disso, só com o Filipe.\n\n- Landing Page: R$ 800 → R$ 720\n- Site Padrão: R$ 1.200 → R$ 1.080\n- Site Ampliado: R$ 1.700 → R$ 1.530"}, {"cat": "pag", "t": "Entrada e saldo", "b": "50% na entrada, para começar, e 50% quando o site for publicado. Confirme o pagamento da entrada antes de qualquer promessa de data.", "c": "50% na entrada, para começar, e 50% quando o site for publicado.", "pend": true}, {"cat": "pag", "t": "Pix", "b": "Chave Pix e quem envia os dados da entrada: a definir pelo Filipe.\n\nEnquanto não estiver definido, diga: \"Vou te mandar os dados de pagamento ainda hoje.\" e avise o Filipe.", "pend": true}, {"cat": "pag", "t": "Cartão de crédito (link de pagamento)", "b": "Cobrança por link de pagamento: taxas, parcelamento e quem gera o link ainda precisam ser definidos pelo Filipe.\n\nEnquanto isso, diga: \"Vou confirmar a forma e te retorno ainda hoje.\" Não prometa parcelamento.", "pend": true}, {"cat": "pag", "t": "À vista com desconto", "b": "Landing R$ 720, Padrão R$ 1.080, Ampliado R$ 1.530. Só se o cliente pagar 100% na entrada. No cartão do lead, marque \"À vista, com 10% de desconto\"."}, {"cat": "pag", "t": "Domínio e hospedagem", "b": "O endereço .com.br custa em torno de R$ 40 por ano e é pago pela clínica, no nome dela. Nós configuramos tudo. Se a clínica já tem domínio, usamos o dele.", "c": "O endereço .com.br custa em torno de R$ 40 por ano e é pago pela clínica, no nome dela. Nós configuramos tudo. Se a clínica já tem um domínio, usamos o dele.", "pend": true}, {"cat": "pag", "t": "Manutenção mensal (opcional)", "b": "R$ 99 por mês, com hospedagem e até 2 alterações de texto ou foto por mês. Sem o plano, cada alteração é orçada antes.", "pend": true}, {"cat": "pag", "t": "Reembolso", "b": "Política ainda não definida. Não prometa devolução; diga que vai confirmar com a equipe.", "pend": true}, {"cat": "pag", "t": "Contrato", "b": "Termo simples com escopo, valor, prazo e forma de pagamento. Modelo a confirmar com o Filipe.", "c": "Sim, um termo simples com escopo, valor, prazo e forma de pagamento.", "pend": true}, {"cat": "lig", "t": "Objetivo e abertura", "b": "O objetivo da ligação é um só: marcar a reunião do dia seguinte. Não venda o site por telefone.", "c": "Olá, [nome], tudo bem? Aqui é a [seu nome], da Vetor Digital. Falo com o responsável pela [CLÍNICA]? Aviso que a ligação é gravada para eu melhorar o meu atendimento, tudo bem?"}, {"cat": "lig", "t": "Motivo do contato", "b": "Cite um dado real da clínica, como o número de avaliações.", "c": "Vi a [CLÍNICA] no Google e as avaliações são muito boas. Reparei que o link do perfil leva para o Instagram e que a clínica não tem um site próprio. A Vetor Digital faz sites para clínicas. Queria te mostrar, amanhã, em uns 20 minutos, um modelo de site com a identidade da [CLÍNICA], sem compromisso. Que horário fica melhor para você?"}, {"cat": "lig", "t": "Pergunta para engajar", "b": "Só se a pessoa estiver aberta.", "c": "Hoje, como os pacientes novos encontram vocês?"}, {"cat": "lig", "t": "Marcando a reunião", "b": "- Ofereça dois horários, ambos depois das 14h: \"amanhã às 15h ou às 16h?\".\n- Confirme que quem decide estará presente. Se houver sócio, convide.\n- Combine o formato (vídeo ou presencial) e peça o WhatsApp do responsável.\n- Feche: \"Vou te mandar agora no WhatsApp o horário e um link com exemplos de sites.\"\n\nRegra do horário: reunião depois das 14h, dados ao Filipe até as 18h do dia anterior. Máximo de 4 reuniões por dia."}, {"cat": "lig", "t": "O que enviar ao Filipe depois da ligação", "b": "- Nome e cargo de quem vai à reunião, e WhatsApp.\n- Dia e horário combinados.\n- Link do perfil no Google e @ do Instagram da clínica.\n- Se a clínica tem logo e fotos próprias, e o tratamento que mais quer destacar.\n\nNo sistema: mova o cartão para Reunião marcada, preencha data e hora e use o botão Notificar no cartão. Ele copia os dados e abre o WhatsApp do Filipe."}, {"cat": "lig", "t": "Situações comuns", "b": "- Pediu o preço: \"Os sites começam em R$ 1.200. Na reunião eu mostro o que inclui e o modelo da clínica.\"\n- Não é o responsável: peça o nome e o melhor horário para falar com ele. Não explique a oferta inteira à recepcionista.\n- Quer só por WhatsApp: envie o link do portfólio e insista uma vez na reunião de 20 minutos.\n- Já tem site: agradeça e encerre. Fora do perfil, não insista.\n- Não diga que o site é \"grátis\" nem que \"já está pronto\". Diga que vamos montar um modelo para ela ver."}, {"cat": "reu", "t": "Roteiro da reunião (20 a 30 min)", "b": "Mostre o site da clínica antes de falar o valor. Se o cliente perguntar o preço antes, responda direto: R$ 1.200.\n\n1. Abertura (2 min): agradeça, confirme o tempo, avise que a reunião é gravada e confirme que quem decide está presente.\n2. Entender (5 min): faça perguntas e escute.\n3. Portfólio (3 min): 1 ou 2 sites, avisando que são exemplos fictícios.\n4. Site da clínica (5 min): \"Montamos este modelo com a identidade de vocês.\" Pergunte \"O que você mudaria?\" e anote.\n5. Valor (3 min): Site Padrão, R$ 1.200, 2 páginas, até 5 dias úteis, 50% na entrada e 50% na publicação. Manutenção como opcional.\n6. Fechar (5 min): faça silêncio depois do preço e deixe o cliente responder."}, {"cat": "reu", "t": "Perguntas para entender o cliente", "b": "- \"Como os pacientes novos chegam hoje: indicação, Instagram, Google?\"\n- \"Já tiveram site? O que aconteceu?\"\n- \"O que mais pesa hoje: ser encontrado, passar confiança ou receber contatos?\"\n- \"Qual tratamento vocês mais querem destacar?\""}, {"cat": "reu", "t": "Frase de fechamento", "b": "Depois do preço, silêncio.", "c": "Se estiver tudo certo, a gente já começa hoje. Posso te passar os dados da entrada?"}, {"cat": "reu", "t": "Se o cliente não fechar na hora", "b": "- Pergunte o que falta: o valor, o prazo ou como funciona.\n- Combine um retorno com data e horário: \"Posso te ligar quinta às 10h?\".\n- Envie o resumo por WhatsApp no mesmo dia: pacote, valor, prazo e o link do modelo.\n- No máximo 2 retornos. Depois de uma recusa clara, agradeça e encerre.\n\nNo sistema: registre o contato como \"Reunião feita, não fechou\". O follow-up é agendado sozinho."}, {"cat": "tec", "t": "O que está incluído nos R$ 1.200?", "b": "Resposta pronta.", "c": "Site de 2 páginas (Início e Tratamentos) com a identidade da clínica, versão para celular, botão de WhatsApp, mapa, endereço, horários e Instagram, dados do responsável técnico e publicação no endereço da clínica. Textos e organização das fotos estão incluídos."}, {"cat": "tec", "t": "Quantas páginas tem cada pacote?", "b": "Padrão: 2 páginas. Landing: 1. Ampliado: 3 a 4.", "c": "O Site Padrão tem 2: a página Início e a página Tratamentos. A Landing Page (R$ 800) tem 1 página só. O Ampliado (R$ 1.700) tem 3 a 4 páginas, com Sobre/Equipe, perguntas frequentes e formulário de pedido de avaliação."}, {"cat": "tec", "t": "O que é \"dobra\"?", "b": "Resposta pronta.", "c": "É cada bloco do site que aparece quando a pessoa rola a tela: o topo com a chamada, depois a apresentação, os tratamentos, o responsável, o endereço. A página Início do Site Padrão tem até 6 dessas seções, e a página Tratamentos detalha cada procedimento."}, {"cat": "tec", "t": "Posso pedir alteração depois?", "b": "Resposta pronta. Número de rodadas a confirmar.", "c": "Durante a montagem, os ajustes de texto e foto estão incluídos. Depois que o site está no ar, a manutenção opcional (R$ 99/mês) cobre até 2 alterações por mês. Fora dela, cada alteração é orçada antes.", "pend": true}, {"cat": "tec", "t": "O que posso incluir no site?", "b": "Resposta pronta.", "c": "Logo, fotos da clínica e da equipe, lista de tratamentos, endereço, horários, WhatsApp, Instagram e o registro profissional do responsável. Fotos de antes e depois, preços e promoções ficam de fora, por regra dos conselhos."}, {"cat": "tec", "t": "Quanto tempo leva?", "b": "Prazo a confirmar.", "c": "Até 5 dias úteis depois de receber logo, fotos e informações.", "pend": true}, {"cat": "tec", "t": "Vai aparecer em primeiro lugar no Google?", "b": "Nunca prometa posição.", "c": "Ninguém pode prometer posição no Google. O site entra com título e descrição bem escritos para a busca, e isso ajuda a clínica a ser encontrada. A posição depende de vários fatores, e a gente prefere não prometer o que não controla."}, {"cat": "tec", "t": "Quem escreve os textos? Quem tira as fotos?", "b": "Resposta pronta.", "c": "A gente escreve a partir do que a clínica passa e da lista de tratamentos, em linguagem adequada às regras do conselho profissional. A clínica revisa e aprova. As fotos a clínica envia (de 5 a 10 já ajudam). Sem fotos, usamos um layout que funciona só com texto e identidade visual, e a clínica pode trocar depois."}, {"cat": "tec", "t": "Posso ver o site antes de pagar?", "b": "Resposta pronta.", "c": "Sim, o modelo da clínica que mostramos na reunião já é essa prévia. O pagamento de entrada autoriza o início da versão final com os dados reais."}, {"cat": "tec", "t": "Os sites do portfólio são de clientes?", "b": "Resposta pronta.", "c": "São exemplos fictícios, feitos para mostrar estilos diferentes. O modelo da clínica é o que vale como prévia do resultado."}, {"cat": "tec", "t": "Vocês usam inteligência artificial?", "b": "Resposta pronta.", "c": "Usamos ferramentas modernas para ganhar velocidade, e cada site passa por revisão da nossa equipe. O que o cliente recebe é um site profissional e revisado."}, {"cat": "tec", "t": "O site é meu? Precisa de blog ou loja?", "b": "Resposta pronta.", "c": "Sim, o domínio fica no nome da clínica. Blog ou loja não estão no Site Padrão; se a clínica quiser, orçamos separadamente."}, {"cat": "tec", "t": "E se eu não gostar?", "b": "Não prometa devolução.", "c": "Os ajustes durante a montagem fazem parte do serviço. Se algo ficar fora do combinado, a gente corrige.", "pend": true}, {"cat": "obj", "t": "Método e desconto", "b": "Ouça até o fim, confirme que entendeu, pergunte o que está por trás e só então responda. Não discuta. Antes de falar em desconto, tente resolver pelo valor que o site entrega.\n\nDesconto: até 10%, só à vista, só para fechar objeção de preço."}, {"cat": "obj", "t": "\"Está caro.\"", "b": "Pergunte primeiro: \"Caro em relação a quê? Ao valor total ou à forma de pagar?\"\n\n- Se for o valor: um único paciente novo de tratamento de maior valor já cobre o investimento, e o site fica no ar todos os dias.\n- Se for a forma de pagar: lembre dos 50% na entrada e 50% na entrega.\n- Se quiser algo mais enxuto: apresente a Landing Page de R$ 800."}, {"cat": "obj", "t": "\"Vou pensar.\"", "b": "Depois combine a data do retorno e envie o resumo no mesmo dia.", "c": "Claro. Para eu te ajudar a decidir, o que você ainda precisa avaliar: o valor, o prazo ou como funciona?"}, {"cat": "obj", "t": "\"Já tenho Instagram.\"", "b": "Veja também a pergunta frequente sobre Instagram.", "c": "O Instagram mostra o dia a dia. O site fica no Google quando alguém busca o tratamento e a cidade, tem endereço, mapa e responsável técnico num só lugar, e passa a solidez que muitos pacientes procuram antes de marcar. O Instagram você não controla, o algoritmo muda. O site é um endereço que é da clínica."}, {"cat": "obj", "t": "\"Um sobrinho / conhecido faz para mim.\"", "b": "Resposta pronta.", "c": "Ótimo, se ele tiver experiência com sites de clínicas. Duas perguntas para comparar: ele conhece as regras do CFM e do CFO para comunicação? E vai dar manutenção depois? O nosso trabalho já vem com essas regras aplicadas e com suporte."}, {"cat": "obj", "t": "\"Preciso falar com meu sócio.\"", "b": "Resposta pronta.", "c": "Faz sentido. Posso incluir o seu sócio numa conversa rápida de 15 minutos? Assim a dúvida dele é respondida na hora, e você não precisa explicar tudo sozinho."}, {"cat": "obj", "t": "\"Não é o momento.\"", "b": "Pergunte: \"O que precisaria estar diferente para ser o momento?\"\n\n- Questão de caixa: ofereça o pagamento em duas etapas.\n- Questão de agenda: marque um novo contato com data."}, {"cat": "obj", "t": "\"Já tenho site.\"", "b": "Peça o endereço e olhe depois. Se estiver desatualizado ou sem versão para celular, volte com o modelo. Se estiver bom, agradeça e encerre sem insistir."}, {"cat": "obj", "t": "\"Não sei se funciona para clínica.\"", "b": "Não prometa número de pacientes. Mostre o portfólio, explique o que o site faz (credibilidade, ser encontrado, WhatsApp à mão) e diga que o resultado depende de a clínica divulgar o endereço e de outros fatores."}, {"cat": "saude", "t": "Regras de publicidade em saúde", "b": "Valem em qualquer conversa e em qualquer site (CFM, CFO, CRP):\n\n- Nada de antes e depois, nem como promessa, nem como exemplo.\n- Nada de preço ou promoção no site, nem \"desconto de inauguração\".\n- Nada de garantia de resultado: evite \"resultado garantido\", \"sem dor\", \"o melhor da cidade\".\n- Nada de depoimento fabricado. Só depoimentos reais e permitidos pelo conselho.\n- Registro profissional real (CRO, CRM etc.), só depois de o cliente enviar. Nunca invente número.\n- Diga que os sites do portfólio são fictícios.\n- Dúvida sobre o que pode? Diga \"vou confirmar a regra do conselho e te retorno\". Não improvise."}, {"cat": "saude", "t": "Posso colocar depoimentos e antes e depois?", "b": "Resposta pronta.", "c": "Antes e depois e depoimentos de pacientes são restritos pelo CFM e pelo CFO. Não colocamos. O site mostra estrutura, tratamentos e o responsável técnico."}, {"cat": "saude", "t": "Gravação das ligações", "b": "Avise sempre, no início, que a conversa é gravada e que é para melhorar o atendimento. Se a pessoa não aceitar, não grave e siga normalmente. Use a gravação só para treinamento interno."}, {"cat": "pos", "t": "Passos depois de fechar", "b": "1. Avise o Filipe na hora, com o nome da clínica e o pacote fechado.\n2. Envie os dados da entrada (50%) e confirme o pagamento antes de prometer data.\n3. Peça os materiais em uma lista só.\n4. Combine o prazo: os até 5 dias úteis começam quando os materiais chegarem.\n5. Quando o site for publicado, peça uma avaliação e uma indicação de outra clínica.\n\nNo sistema: mova o cartão para Fechado e escolha o pacote (marque \"À vista\" se for o caso)."}, {"cat": "pos", "t": "Lista de materiais para pedir ao cliente", "b": "Peça tudo de uma vez.", "c": "Para começar o site, preciso de:\n- Logo em boa qualidade (se não tiver, usamos o nome em texto)\n- De 5 a 10 fotos da clínica, da equipe e do ambiente\n- Lista dos tratamentos que quer destacar\n- Nome completo e registro (CRO, CRM etc.) do responsável técnico\n- WhatsApp que deve receber os contatos\n- Endereço completo e horários de atendimento\n- Link do Instagram e do perfil no Google"}, {"cat": "pos", "t": "O que registrar de cada lead", "b": "- Clínica, cidade, especialidade e link do Google.\n- Nome e cargo de quem atendeu.\n- Data da ligação e resultado.\n- Data e horário da reunião.\n- Resultado da reunião: fechou, pensando (com data de retorno), perdeu.\n- Motivo principal da perda ou da dúvida, nas palavras do cliente."}, {"cat": "pos", "t": "Indicadores da semana", "b": "Ligações feitas, atendidas pelo responsável, reuniões marcadas, reuniões realizadas, fechamentos e principais objeções. Veja na aba Dashboard e revise todo fim de semana com o Filipe."}];
+var MCATS=[['prod','Produtos e preços'],['pag','Pagamento'],['lig','Ligação'],['reu','Reunião'],['tec','Dúvidas técnicas'],['obj','Objeções'],['saude','Regras de saúde'],['pos','Depois de vender']];
+var manualCfg=null, mnQ='', mnCat='todos';
+function manualItems(){return manualCfg||DEFAULT_MANUAL}
+function mdLite(t){
+  return String(t||'').split(/\n\n+/).map(function(bl){
+    var ln=bl.split('\n');
+    if(ln.every(function(x){return /^- /.test(x)}))return '<ul>'+ln.map(function(x){return '<li>'+esc(x.slice(2))+'</li>'}).join('')+'</ul>';
+    return '<p>'+ln.map(esc).join('<br>')+'</p>';
+  }).join('');
+}
+function renderManual(){
+  var its=manualItems(),q=norm(mnQ);
+  var cats=[['todos','Todos']].concat(MCATS);
+  $('#mnCats').innerHTML=cats.map(function(c){return '<button class="btn sm" data-mcat="'+c[0]+'" aria-pressed="'+(mnCat===c[0])+'">'+esc(c[1])+'</button>'}).join('');
+  var vis=its.map(function(it,i){return {it:it,i:i}}).filter(function(o){
+    if(mnCat!=='todos'&&o.it.cat!==mnCat)return false;
+    return !q||norm([o.it.t,o.it.b,o.it.c].join(' ')).indexOf(q)>=0;
+  });
+  $('#mnList').innerHTML=vis.length?vis.map(function(o){var it=o.it;
+    return '<details class="mi"'+(q.length>=2&&vis.length<=4?' open':'')+'><summary><span>'+esc(it.t)+'</span>'+(it.pend?'<span class="chip warn">a confirmar</span>':'')+'</summary><div class="mb">'+mdLite(it.b)+(it.c?'<div class="mq">'+esc(it.c)+'</div><div class="row"><button class="btn sm" data-mcopy="'+o.i+'">Copiar texto</button></div>':'')+'</div></details>'}).join(''):'<div class="vazio">Nada encontrado. Diga ao cliente que vai confirmar e retorna.</div>';
+}
+function abrirManual(){$('#drawer').hidden=false;$('#manualFab').setAttribute('aria-expanded','true');renderManual();var b=$('#mnBusca');if(b)b.focus()}
+function fecharManual(){$('#drawer').hidden=true;$('#manualFab').setAttribute('aria-expanded','false')}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click',function(e){
+  var t=e.target;
+  var tab=t.closest('.tab');if(tab){location.hash=tab.dataset.v;return}
+  if(t.closest('#drClose')){fecharManual();return}
+  if(t.closest('#sair')){var go2=function(){location.reload()};if(sb)sb.auth.signOut().then(go2,go2);else go2();return}
+  var mf=t.closest('[data-manual]');if(mf){if($('#drawer').hidden)abrirManual();else fecharManual();return}
+  var mc=t.closest('[data-mcat]');if(mc){mnCat=mc.dataset.mcat;renderManual();return}
+  var mcp=t.closest('[data-mcopy]');if(mcp){var mi=manualItems()[parseInt(mcp.dataset.mcopy,10)];if(mi)copy(mi.c,'Texto copiado');return}
+  var nt=t.closest('[data-notif]');
+  if(nt){var ln=byId[nt.dataset.notif];if(ln){copy(msgNotif(ln),digits(notifTel)?'Dados copiados. Abrindo o WhatsApp do Filipe':'Dados copiados. Escolha o contato do Filipe no WhatsApp');if(canWrite)save(ln.id,{notificadoEm:Date.now()}).catch(function(){})}return}
+  var pr=t.closest('[data-per]');if(pr){dashP=pr.dataset.per;renderDash();return}
+  if(!openId){
+    var tr=t.closest('tr[data-row]');if(tr&&!t.closest('input,select,button,a')){abrirModal(tr.dataset.row);return}
+    if(t.id==='bMais'){baseF.max+=150;renderBaseTabela();return}
+    if(t.id==='bLibGo'){liberar();return}
+    var bk=t.closest('[data-bulk]');
+    if(bk){var k=bk.dataset.bulk,ids=Object.keys(baseF.sel).filter(function(x){return baseF.sel[x]&&byId[x]});
+      if(k==='limpar'){baseF.sel={};renderBaseTabela();return}
+      var fn=k==='funil'?function(l){return l.stage==='base'?{stage:'novo',liberadoEm:Date.now()}:{}}:k==='base'?function(){return {stage:'base'}}:function(){return {classe:k.slice(3)}};
+      lote(ids,fn).then(function(){baseF.sel={};toast('Atualizado: '+ids.length+' lead(s)')},function(){toast('Não foi possível atualizar todos')});return}
+  }
+  var go=t.closest('[data-go]');if(go){location.hash=go.dataset.go;return}
+  if(t.id==='novoLead'||t.closest('[data-new]')){abrirNovo();return}
+  if(t.closest('#cfgBtn')){abrirCfg();return}
+  if(t.id==='impLer'){conferirImport();return}
+  if(t.id==='impGo'){importar();return}
+  var card=t.closest('.card');if(card&&!openId){abrirModal(card.dataset.id);return}
+  if(!openId)return;
+  var l=byId[openId];
+  if(t.id==='nvSalvar'){salvarNovo();return}
+  if(t.id==='cfgAdd'){lerCfg();cfgWork.push({id:'fu'+Date.now().toString(36),nome:'',cor:'gray',canal:'WhatsApp',dias:2,gatilho:''});desenhaCfg();return}
+  if(t.dataset&&t.dataset.cfgdel!==undefined){lerCfg();cfgWork.splice(parseInt(t.dataset.cfgdel,10),1);desenhaCfg();return}
+  if(t.id==='cfgSalvar'){lerCfg();var its=cfgWork.filter(function(x){return x.nome});if(!its.length){toast('Mantenha ao menos um tipo com nome');return}
+    Promise.all([db.collection('config').doc('followups').set({items:its}),db.collection('config').doc('notificar').set({tel:cfgTel})]).then(function(){fecharModal();toast('Configurações salvas')},function(){toast('Não foi possível salvar as configurações')});return}
+  if(t.id==='mFechar'||(t.id==='veil'&&openId!=='__aviso')){fecharModal();return}
+  if(t.id==='mCopiar'&&l){copy(resumo(l),'Resumo copiado');return}
+  var st=t.closest('[data-st]');
+  if(st&&l){setStage(l.id,st.dataset.st).then(function(){[].forEach.call(document.querySelectorAll('#mEtapas .btn'),function(b){b.setAttribute('aria-pressed',b.dataset.st===st.dataset.st)});toast('Movido para '+etapaDe(st.dataset.st).nome)}).catch(function(){});return}
+  if(t.id==='cGo'&&l){
+    var res=$('#cRes').value, r=RESULT.find(function(x){return x.id===res});
+    var c={t:Date.now(),canal:$('#cCanal').value,resultado:res,nota:$('#cNota').value.trim(),por:myId||'',fu:(l.proxAcao&&l.proxAcao.tipo)||''};
+    var patch={contatos:(l.contatos||[]).concat([c])};
+    var tg=tipos().find(function(t){return t.gatilho===res});
+    if(tg)patch.proxAcao={tipo:tg.id,data:addDias(tg.dias),canal:tg.canal,texto:''};
+    else if(res==='marcou'||res==='fechou'||res==='perdeu')patch.proxAcao=null;
+    if(res==='marcou'&&!l.reuniao){toast('Preencha data e hora da reunião e salve')}
+    var gravar=function(){return save(l.id,patch)};var sugE=r.sug;
+    (sugE?setStage(l.id,sugE,patch):gravar()).then(function(){$('#cNota').value='';toast('Contato registrado');var cur=byId[l.id];
+      if(cur){[].forEach.call(document.querySelectorAll('#mEtapas .btn'),function(b){b.setAttribute('aria-pressed',b.dataset.st===(cur.stage||'novo'))})}}).catch(function(){});
+    return;
+  }
+  if(t.id==='mSalvar'&&l){var p=lerCampos();
+    if(p.esboco==='pedido'&&l.esboco!=='pedido')toast('Esboço pedido');
+    save(l.id,p).then(function(){toast('Alterações salvas');fecharModal()}).catch(function(){});return}
+  if(t.id==='pConcluir'&&l){save(l.id,{proxAcao:null}).then(function(){$('#pTipo').value='';$('#pData').value='';$('#pTxt').value='';toast('Follow-up concluído')}).catch(function(){});return}
+  if(t.id==='mDel'){$('#mConf').innerHTML='<span class="conf">Excluir este lead e o histórico? <button class="btn sm bad" id="mDel2">Excluir</button><button class="btn sm" id="mDel3">Cancelar</button></span>';return}
+  if(t.id==='mDel3'){$('#mConf').innerHTML='';return}
+  if(t.id==='mDel2'&&l){db.collection('leads').doc(l.id).delete().then(function(){toast('Lead excluído');fecharModal()},function(){toast('Não foi possível excluir')});return}
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){if(!$('#drawer').hidden){fecharManual();return}if(openId)fecharModal()}
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('card')){e.preventDefault();abrirModal(e.target.dataset.id)}
+});
+/* arrastar entre colunas */
+var dragId=null;
+document.addEventListener('dragstart',function(e){var c=e.target.closest&&e.target.closest('.card');if(!c)return;dragId=c.dataset.id;c.classList.add('drag');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',dragId)}catch(x){}});
+document.addEventListener('dragend',function(){dragId=null;[].forEach.call(document.querySelectorAll('.drag,.over'),function(n){n.classList.remove('drag','over')})});
+document.addEventListener('dragover',function(e){var c=e.target.closest&&e.target.closest('.col');if(c&&dragId){e.preventDefault();c.classList.add('over')}});
+document.addEventListener('dragleave',function(e){var c=e.target.closest&&e.target.closest('.col');if(c&&!c.contains(e.relatedTarget))c.classList.remove('over')});
+document.addEventListener('drop',function(e){
+  var c=e.target.closest&&e.target.closest('.col');if(!c||!dragId)return;e.preventDefault();c.classList.remove('over');
+  var id=dragId,st=c.dataset.stage,l=byId[id];dragId=null;
+  if(l&&(l.stage||'novo')!==st)setStage(id,st).then(function(){toast(l.nome+' → '+etapaDe(st).nome+(st==='reuniao'?' (esboço pedido, preencha a data da reunião no cartão)':''))}).catch(function(){});
+});
+document.addEventListener('input',function(e){
+  var id=e.target.id;
+  if(id==='bBusca'){baseF.q=e.target.value;baseF.max=150;renderBaseTabela()}
+  else if(id==='lbQtd'||id==='lbA'||id==='lbB'||id==='lbC')atualizaLiberar();
+  else if(id==='mnBusca'){mnQ=e.target.value;renderManual()}
+});
+document.addEventListener('change',function(e){
+  var t=e.target,id=t.id;
+  if(id==='dashG'){dashG=t.value;renderDash()}
+  else if(id==='bSt'){baseF.st=t.value;baseF.max=150;renderBaseTabela()}
+  else if(id==='bCl'){baseF.cl=t.value;baseF.max=150;renderBaseTabela()}
+  else if(id==='bLote'){baseF.lote=t.value;baseF.max=150;renderBaseTabela()}
+  else if(id==='bOrd'){baseF.ord=t.value;renderBaseTabela()}
+  else if(id==='bAll'){baseF.sel={};if(t.checked)baseFiltrados().slice(0,baseF.max).forEach(function(l){baseF.sel[l.id]=true});renderBaseTabela()}
+  else if(t.dataset&&t.dataset.sel){baseF.sel[t.dataset.sel]=t.checked;renderBaseTabela()}
+  else if(t.dataset&&t.dataset.cls!==undefined){save(t.dataset.cls,{classe:t.value}).catch(function(){})}
+});
+$('#busca').addEventListener('input',function(){if(view==='funil')renderBoard()});
+$('#filtro').addEventListener('change',function(){if(view==='funil')renderBoard()});
+
+/* ---------- navegação e ciclo ---------- */
+function render(){
+  [].forEach.call(document.querySelectorAll('.tab'),function(b){b.setAttribute('aria-selected',b.dataset.v===view)});
+  $('#tools').hidden=view!=='funil';
+  $('#pgTitle').textContent=({funil:'Funil',base:'Base de leads',dash:'Dashboard',importar:'Importar lista'})[view]||'Funil';
+  badges();
+  $('#ro').hidden=canWrite;
+  if(dbError){$('#main').innerHTML='<div class="empty"><h2>Não foi possível abrir os dados</h2><p>'+esc(dbError)+'</p></div>';return}
+  if(view==='funil')renderBoard();else if(view==='base')renderBase();else if(view==='dash')renderDash();else renderImportar();
+}
+function rota(){var h=(location.hash||'').replace('#','');if(h==='metricas')h='dash';if(!isAdmin&&(h==='base'||h==='importar'))h='funil';view=['funil','base','dash','importar'].indexOf(h)>=0?h:'funil';render()}
+window.addEventListener('hashchange',rota);
+
+function recebe(snap){
+  leads=snap.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return o});
+  byId={};leads.forEach(function(l){byId[l.id]=l});loaded=true;
+  if(view==='base'){if($('#bTab')){renderBaseTabela();atualizaLiberar()}else render()}
+  else if(view==='funil'||view==='dash'){
+    var scroll=$('#board')?$('#board').scrollLeft:0;
+    render();if($('#board'))$('#board').scrollLeft=scroll;
+  }
+  badges();
+  if(openId&&openId.indexOf('__')!==0){if(!byId[openId])fecharModal();else histModal()}
+  if(!$('#drawer').hidden&&false)renderManual();
+}
+/* ---------- Banco (Supabase) ---------- */
+function criarDb(sb){
+  var caches={};
+  function erro(e){var m=(e&&e.message)||'erro',er=new Error(m);er.code=/row-level|permission|denied|jwt/i.test(m)?'invalid_argument':((e&&e.code)||'');return er}
+  function mk(id,data){return {id:id,data:function(){return data}}}
+  function lista(c){return Object.keys(c.map).map(function(id){return mk(id,c.map[id])})}
+  function notificar(c){
+    var docs=lista(c);
+    c.listeners.forEach(function(f){f({docs:docs})});
+    c.dl.forEach(function(d){var has=Object.prototype.hasOwnProperty.call(c.map,d.id);d.f({exists:has,data:function(){return c.map[d.id]}})});
+  }
+  async function carregar(name){
+    var from=0,PAGE=1000,all=[];
+    for(;;){
+      var r=await sb.from('docs').select('id,data').eq('collection',name).order('id').range(from,from+PAGE-1);
+      if(r.error)throw r.error;
+      all=all.concat(r.data||[]);if(!r.data||r.data.length<PAGE)break;from+=PAGE;
+    }
+    var m={};all.forEach(function(x){m[x.id]=x.data});return m;
+  }
+  async function atualizar(c,name,forcar){
+    try{
+      var m=await carregar(name),mudou=JSON.stringify(m)!==JSON.stringify(c.map);
+      c.map=m;c.loaded=true;if(mudou||forcar)notificar(c);
+    }catch(e){if(!c.loaded){c.failed=erro(e);c.errs.forEach(function(f){f(c.failed)})}}
+  }
+  function cache(name){
+    var c=caches[name];if(c)return c;
+    c=caches[name]={map:{},listeners:[],dl:[],errs:[],loaded:false,failed:null};
+    var started=false,go=function(){if(started)return;started=true;atualizar(c,name,true)};
+    try{
+      sb.channel('rt-'+name).on('postgres_changes',{event:'*',schema:'public',table:'docs',filter:'collection=eq.'+name},function(p){
+        if(p.eventType==='DELETE'){var o=p.old||{};if(o.id!=null)delete c.map[o.id]}
+        else if(p.new&&p.new.id!=null)c.map[p.new.id]=p.new.data;
+        if(c.loaded)notificar(c);
+      }).subscribe(function(st){if(st==='SUBSCRIBED')go()});
+    }catch(e){}
+    setTimeout(go,3000);
+    setInterval(function(){if(!document.hidden&&started)atualizar(c,name,false)},60000);
+    document.addEventListener('visibilitychange',function(){if(!document.hidden&&started)atualizar(c,name,false)});
+    return c;
+  }
+  function docRef(name,id){
+    var c=cache(name);
+    return {
+      id:id,
+      set:async function(d){
+        d=JSON.parse(JSON.stringify(d));c.map[id]=d;if(c.loaded)notificar(c);
+        var r=await sb.from('docs').upsert({collection:name,id:id,data:d},{onConflict:'collection,id'});
+        if(r.error){atualizar(c,name,true);throw erro(r.error)}
+      },
+      update:async function(d){
+        d=JSON.parse(JSON.stringify(d));c.map[id]=Object.assign({},c.map[id],d);if(c.loaded)notificar(c);
+        var r=await sb.rpc('doc_update',{p_collection:name,p_id:id,p_patch:d});
+        if(r.error){atualizar(c,name,true);throw erro(r.error)}
+      },
+      delete:async function(){
+        delete c.map[id];if(c.loaded)notificar(c);
+        var r=await sb.from('docs').delete().eq('collection',name).eq('id',id);
+        if(r.error){atualizar(c,name,true);throw erro(r.error)}
+      },
+      onSnapshot:function(f,err){
+        c.dl.push({id:id,f:f});if(err)c.errs.push(err);
+        if(c.failed&&err)err(c.failed);
+        else if(c.loaded)f({exists:Object.prototype.hasOwnProperty.call(c.map,id),data:function(){return c.map[id]}});
+        return function(){};
+      }
+    };
+  }
+  return {collection:function(name){return {
+    doc:function(id){return docRef(name,id||(window.crypto&&crypto.randomUUID?crypto.randomUUID():'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)))},
+    add:async function(d){var ref=this.doc();await ref.set(d);return ref},
+    onSnapshot:function(f,err){
+      var c=cache(name);c.listeners.push(f);if(err)c.errs.push(err);
+      if(c.failed&&err)err(c.failed);else if(c.loaded)f({docs:lista(c)});
+      return function(){};
+    }
+  }}};
+}
+
+/* ---------- Login e papéis ---------- */
+function mostraLogin(msg){$('#login').hidden=false;if(msg){var e=$('#lgErr');e.textContent=msg;e.hidden=false}}
+function aplicaPapel(){
+  ['tab-base','tab-importar','cfgBtn'].forEach(function(id){var el=$('#'+id);if(el)el.hidden=!isAdmin});
+  rota();
+}
+async function abrirSessao(session){
+  var rr=await sb.rpc('my_role'),role=rr&&!rr.error?rr.data:null;
+  if(!role){await sb.auth.signOut();mostraLogin('Este e-mail não tem acesso ao funil. Peça ao Filipe para liberar.');return false}
+  isAdmin=role==='admin';myId=session.user.email;
+  $('#login').hidden=true;$('#who').textContent=myId+(isAdmin?' · admin':' · SDR');
+  db=criarDb(sb);
+  userNs={id:async function(){return myId},can:async function(){return true},profiles:async function(ids){var o={};ids.forEach(function(i){o[i]={name:String(i).split('@')[0]}});return o}};
+  aplicaPapel();iniciarDados();return true;
+}
+document.addEventListener('submit',async function(e){
+  if(e.target.id!=='loginForm')return;e.preventDefault();
+  var b=$('#lgGo');b.disabled=true;$('#lgErr').hidden=true;
+  try{
+    var r=await sb.auth.signInWithPassword({email:$('#lgEmail').value.trim(),password:$('#lgSenha').value});
+    if(r.error||!r.data||!r.data.session)mostraLogin('E-mail ou senha incorretos.');
+    else await abrirSessao(r.data.session);
+  }catch(x){mostraLogin('Não foi possível entrar. Verifique a conexão e tente de novo.')}
+  b.disabled=false;
+});
+async function iniciar(){
+  rota();
+  var cfg=window.VETOR_CONFIG||{};
+  if(!window.supabase){dbError='Não foi possível carregar a biblioteca de login. Verifique a conexão e recarregue a página.';loaded=true;render();return}
+  if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY){dbError='Configuração pendente: defina SUPABASE_URL e SUPABASE_ANON_KEY na Vercel e faça um novo deploy.';loaded=true;render();return}
+  try{
+    sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+    var r=await sb.auth.getSession();
+    if(r.data&&r.data.session)await abrirSessao(r.data.session);else mostraLogin();
+  }catch(e){console.error('iniciar',e&&e.stack||e);dbError='Falha ao conectar ao banco. Recarregue a página.';loaded=true;render()}
+}
+function iniciarDados(){
+  try{
+    db.collection('config').doc('followups').onSnapshot(function(sn){var d=sn.exists&&sn.data();tiposCfg=d&&Array.isArray(d.items)&&d.items.length?d.items:null;renderFiltro();if(loaded&&!openId&&(view==='funil'||view==='dash'))render()},function(){});
+    db.collection('config').doc('notificar').onSnapshot(function(sn){var d=sn.exists&&sn.data();notifTel=d&&d.tel||'';if(loaded&&!openId&&view==='funil')render()},function(){});
+    db.collection('config').doc('manual').onSnapshot(function(sn){var d=sn.exists&&sn.data();manualCfg=d&&Array.isArray(d.items)&&d.items.length?d.items:null;if(!$('#drawer').hidden)renderManual()},function(){});
+    db.collection('config').doc('proporcao').onSnapshot(function(sn){var d=sn.exists&&sn.data();if(d){prop=Object.assign({},prop,d);var f=document.activeElement;if(view==='base'&&$('#lbQtd')&&!(f&&f.closest&&f.closest('#bLib'))){$('#lbQtd').value=prop.qtd;$('#lbA').value=prop.a;$('#lbB').value=prop.b;$('#lbC').value=prop.c;$('#lbOrd').value=prop.ordem;atualizaLiberar()}}},function(){});
+    unsub=db.collection('leads').onSnapshot(recebe,function(e){loaded=true;dbError=e&&e.code==='revoked'?'O acesso a este funil foi removido.':'Falha ao carregar os leads. Recarregue a página.';render()});
+  }catch(e){console.error('dados',e&&e.stack||e);loaded=true;dbError='Falha ao carregar os leads. Recarregue a página.';render()}
+}
+renderFiltro();
+iniciar();
+})();
+</script>
+</body>
+</html>
